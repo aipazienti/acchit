@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loopstation 8 Tracce</title>
+  <style>
+    :root{
+      --bg:#0f1115;
+      --panel:#151923;
+      --panel2:#111521;
+      --text:#e7ecff;
+      --muted:#a7b0d6;
+      --red:#ff3b3b;
+      --green:#44ff9a;
+      --cyan:#4ee6ff;
+      --ring:#ff3b3b;
+      --ring2:#44ff9a;
+      --stroke:#2a3247;
+      --stroke2:#1c2232;
+      --shadow: 0 10px 30px rgba(0,0,0,.45);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 30% 15%, #1a2240 0%, rgba(26,34,64,0) 55%),
+                  radial-gradient(900px 500px at 80% 30%, #1a3a2f 0%, rgba(26,58,47,0) 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    header{
+      width:min(1100px, 94vw);
+      padding:22px 10px 10px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .title{
+      font-size:28px;
+      letter-spacing:.08em;
+      font-weight:700;
+      opacity:.95;
+    }
+    .top-controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    button, select, input[type="checkbox"]{
+      font: inherit;
+    }
+    .btn{
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.25);
+      cursor:pointer;
+      transition: transform .06s ease, filter .15s ease, border-color .15s ease;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn:hover{ filter:brightness(1.05); border-color:#3a4566; }
+    .btn-primary{ border-color: rgba(78,230,255,.35); }
+    .btn-danger{ border-color: rgba(255,59,59,.35); }
+    .btn-good{ border-color: rgba(68,255,154,.35); }
+    .pill{
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .pill select{
+      background: rgba(0,0,0,.25);
+      border:1px solid var(--stroke2);
+      color:var(--text);
+      padding:7px 10px;
+      border-radius:10px;
+      outline:none;
+    }
+    .statusbar{
+      width:min(1100px, 94vw);
+      padding:0 10px 16px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      color:var(--muted);
+    }
+    .badge{
+      padding:6px 10px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.18);
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background:#666; box-shadow: 0 0 0 2px rgba(255,255,255,.06) inset; }
+    .dot.on{ background: var(--green); }
+    .dot.rec{ background: var(--red); }
+    .dot.play{ background: var(--cyan); }
+
+    main{
+      width:min(1100px, 94vw);
+      padding: 0 10px 26px;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:16px;
+    }
+    @media (max-width: 980px){
+      main{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .track{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .track::before{
+      content:"";
+      position:absolute;
+      inset:-30% -40%;
+      background: radial-gradient(400px 220px at 40% 35%, rgba(78,230,255,.08), rgba(0,0,0,0) 60%),
+                  radial-gradient(360px 240px at 70% 65%, rgba(68,255,154,.06), rgba(0,0,0,0) 60%);
+      pointer-events:none;
+      transform: rotate(-8deg);
+    }
+    .track > *{ position:relative; }
+
+    .track-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .track-title{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+    }
+    .track-title .n{
+      font-weight:800;
+      font-size:18px;
+      opacity:.95;
+    }
+    .track-title .label{
+      font-size:13px;
+      color:var(--muted);
+      opacity:.95;
+    }
+    .mini{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .mini .tag{
+      font-size:12px;
+      padding:4px 8px;
+      border:1px solid var(--stroke2);
+      border-radius:999px;
+      color:var(--muted);
+      background: rgba(0,0,0,.22);
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .mini .tag.rec{ border-color: rgba(255,59,59,.35); color:#ffd0d0; }
+    .mini .tag.play{ border-color: rgba(78,230,255,.35); color:#d6fbff; }
+    .mini .tag.stop{ border-color: rgba(167,176,214,.35); color:var(--muted); }
+
+    .track-body{
+      display:grid;
+      grid-template-columns: 1fr 64px;
+      gap:12px;
+      align-items:center;
+    }
+
+    .big-btn{
+      width:118px;
+      height:118px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.12), rgba(0,0,0,.25) 60%),
+                  rgba(0,0,0,.20);
+      position:relative;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      box-shadow: 0 18px 40px rgba(0,0,0,.45);
+      user-select:none;
+      margin: 6px auto 0;
+    }
+    .big-btn .icon{
+      width:54px; height:54px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background: rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .big-btn svg{ width:30px; height:30px; fill: none; stroke-width:2.4; }
+    .big-btn .ring{
+      position:absolute; inset:-8px;
+      border-radius:999px;
+      border: 10px solid rgba(255,59,59,.75);
+      border-top-color: rgba(255,59,59,.18);
+      border-left-color: rgba(255,59,59,.45);
+      filter: drop-shadow(0 10px 12px rgba(0,0,0,.35));
+      opacity:.85;
+    }
+    .big-btn .ring2{
+      position:absolute; inset: 10px;
+      border-radius:999px;
+      border: 6px solid rgba(68,255,154,.55);
+      border-right-color: rgba(68,255,154,.15);
+      border-bottom-color: rgba(68,255,154,.35);
+      opacity:.85;
+    }
+
+    .fader{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      padding:8px 6px;
+      border-radius:14px;
+      border:1px solid var(--stroke2);
+      background: rgba(0,0,0,.18);
+    }
+    .fader label{
+      font-size:12px;
+      color:var(--muted);
+    }
+    input[type="range"]{
+      -webkit-appearance:none;
+      appearance:none;
+      width: 140px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      outline:none;
+      transform: rotate(-90deg);
+      margin: 54px 0;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width:18px; height:18px;
+      border-radius:50%;
+      background: rgba(255,255,255,.85);
+      border: 2px solid rgba(0,0,0,.35);
+      box-shadow: 0 6px 18px rgba(0,0,0,.45);
+      cursor:pointer;
+    }
+    .track-actions{
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+      justify-content:space-between;
+    }
+    .track-actions .btn{
+      padding:9px 10px;
+      border-radius:12px;
+      flex:1;
+      justify-content:center;
+    }
+
+    .footer-note{
+      width:min(1100px, 94vw);
+      padding: 0 10px 26px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      opacity:.95;
+    }
+    code{ background: rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px solid var(--stroke2);}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">maracaloop A</div>
+    <div class="top-controls">
+      <div class="pill">
+        <span>Sorgente</span>
+        <select id="sourceSelect" aria-label="Sorgente audio">
+          <option value="mic">Microfono (getUserMedia)</option>
+          <option value="screen">Schermo/Tab con audio (getDisplayMedia)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btnInit">1) Attiva Audio</button>
+      <button class="btn btn-good" id="btnPlayAll" disabled>Play All</button>
+      <button class="btn btn-danger" id="btnStopAll" disabled>Stop All</button>
+      <button class="btn" id="btnClearAll" disabled>Clear All</button>
+    </div>
+  </header>
+
+  <div class="statusbar">
+    <div class="badge"><span class="dot" id="dotAudio"></span> AudioContext</div>
+    <div class="badge"><span class="dot" id="dotInput"></span> Ingresso</div>
+    <div class="badge">Loop master: <b id="masterLen">—</b></div>
+    <div class="badge">SampleRate: <b id="sr">—</b></div>
+  </div>
+
+  <main id="grid"></main>
+
+  <div class="footer-note">
+    Suggerimenti:
+    <ul>
+      <li>Apri con <code>https://</code> o <code>http://localhost</code> (altrimenti microfono non funziona).</li>
+      <li>La <b>prima traccia registrata</b> definisce la durata del loop (master). Le altre tracce vengono adattate a quella durata.</li>
+      <li>Per “ingresso sorgente”, prova <b>Condividi scheda</b> con audio (dipende dal browser/OS).</li>
+    </ul>
+  </div>
+
+  <script>
+    // ----------------------------
+    // Audio core
+    // ----------------------------
+    let audioCtx = null;
+    let inputStream = null;
+    let inputNode = null;
+    let masterGain = null;
+    let isInitialized = false;
+
+    // Master loop length (seconds), set by first recording
+    let masterLoopSeconds = null;
+
+    // Tracks
+    const TRACKS = 8;
+    const tracks = [];
+
+    // UI elements
+    const grid = document.getElementById("grid");
+    const btnInit = document.getElementById("btnInit");
+    const btnPlayAll = document.getElementById("btnPlayAll");
+    const btnStopAll = document.getElementById("btnStopAll");
+    const btnClearAll = document.getElementById("btnClearAll");
+    const sourceSelect = document.getElementById("sourceSelect");
+
+    const dotAudio = document.getElementById("dotAudio");
+    const dotInput = document.getElementById("dotInput");
+    const masterLenEl = document.getElementById("masterLen");
+    const srEl = document.getElementById("sr");
+
+    function fmtSec(s){
+      if (s == null) return "—";
+      if (!isFinite(s)) return "—";
+      if (s < 10) return s.toFixed(2) + "s";
+      return s.toFixed(1) + "s";
+    }
+
+    // ----------------------------
+    // AudioWorklet recorder (single file via Blob)
+    // Captures mono float32 from the input.
+    // ----------------------------
+    const workletCode = `
+      class RecorderProcessor extends AudioWorkletProcessor {
+        constructor(){
+          super();
+          this.recording = false;
+          this.chunks = [];
+          this.total = 0;
+          this.port.onmessage = (e) => {
+            const { type } = e.data || {};
+            if (type === 'start') { this.recording = true; this.chunks = []; this.total = 0; }
+            if (type === 'stop')  { this.recording = false; this.port.postMessage({ type:'data', chunks: this.chunks, total: this.total }); }
+            if (type === 'clear') { this.recording = false; this.chunks = []; this.total = 0; }
+          };
+        }
+        process(inputs){
+          const input = inputs[0];
+          if (!input || input.length === 0) return true;
+          const ch0 = input[0]; // mono or first channel
+          if (this.recording && ch0 && ch0.length){
+            // Copy to transferable chunk
+            const c = new Float32Array(ch0.length);
+            c.set(ch0);
+            this.chunks.push(c);
+            this.total += c.length;
+          }
+          return true;
+        }
+      }
+      registerProcessor('recorder-processor', RecorderProcessor);
+    `;
+
+    async function ensureAudioWorklet(){
+      const blob = new Blob([workletCode], { type: "application/javascript" });
+      const url = URL.createObjectURL(blob);
+      await audioCtx.audioWorklet.addModule(url);
+      URL.revokeObjectURL(url);
+    }
+
+    async function getInputStream(){
+      const mode = sourceSelect.value;
+      if (mode === "mic"){
+        return await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          },
+          video: false
+        });
+      }
+      // "screen/tab audio" mode
+      // NOTE: browser support varies; Chrome typically supports audio when sharing a tab.
+      return await navigator.mediaDevices.getDisplayMedia({
+        audio: true,
+        video: true
+      });
+    }
+
+    function setDots(){
+      dotAudio.classList.toggle("on", !!audioCtx && audioCtx.state === "running");
+      dotInput.classList.toggle("on", !!inputStream);
+    }
+
+    function setMasterLoop(seconds){
+      masterLoopSeconds = seconds;
+      masterLenEl.textContent = fmtSec(masterLoopSeconds);
+    }
+
+    function updateGlobalButtons(){
+      const anyHasBuffer = tracks.some(t => !!t.buffer);
+      const anyPlaying = tracks.some(t => t.isPlaying);
+      btnPlayAll.disabled = !isInitialized || !anyHasBuffer;
+      btnStopAll.disabled = !isInitialized || !anyPlaying;
+      btnClearAll.disabled = !isInitialized || !anyHasBuffer;
+    }
+
+    // ----------------------------
+    // Track logic
+    // ----------------------------
+    function createTrack(index){
+      const t = {
+        index,
+        buffer: null,                 // AudioBuffer
+        source: null,                 // AudioBufferSourceNode
+        gainNode: null,               // GainNode
+        recorderNode: null,           // AudioWorkletNode
+        isRecording: false,
+        isPlaying: false,
+        lastStartTime: 0,             // audioCtx.currentTime when started
+        ui: {}
+      };
+      return t;
+    }
+
+    function stopPlayback(t){
+      if (t.source){
+        try { t.source.stop(); } catch {}
+        try { t.source.disconnect(); } catch {}
+        t.source = null;
+      }
+      t.isPlaying = false;
+      updateTrackUI(t);
+      updateGlobalButtons();
+    }
+
+    function startPlayback(t){
+      if (!t.buffer || !audioCtx) return;
+      stopPlayback(t);
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = t.buffer;
+      src.loop = true;
+      src.loopStart = 0;
+      src.loopEnd = t.buffer.duration;
+
+      src.connect(t.gainNode);
+      src.start();
+
+      t.source = src;
+      t.isPlaying = true;
+      t.lastStartTime = audioCtx.currentTime;
+      updateTrackUI(t);
+      updateGlobalButtons();
+    }
+
+    function clearTrack(t){
+      stopPlayback(t);
+      t.buffer = null;
+      t.isRecording = false;
+      updateTrackUI(t);
+      updateGlobalButtons();
+    }
+
+    function quantizeToMasterBuffer(buf){
+      // If master not set, do nothing
+      if (masterLoopSeconds == null) return buf;
+
+      const sr = buf.sampleRate;
+      const targetFrames = Math.round(masterLoopSeconds * sr);
+      const chs = buf.numberOfChannels;
+
+      // Create new buffer with master length
+      const out = audioCtx.createBuffer(chs, targetFrames, sr);
+
+      for (let ch = 0; ch < chs; ch++){
+        const inData = buf.getChannelData(ch);
+        const outData = out.getChannelData(ch);
+
+        if (inData.length >= targetFrames){
+          // Trim
+          outData.set(inData.subarray(0, targetFrames));
+        } else {
+          // Copy and leave rest as zeros (padding)
+          outData.set(inData);
+          // Optional: could do crossfade at loop boundary; kept simple.
+        }
+      }
+      return out;
+    }
+
+    async function startRecording(t){
+      if (!audioCtx || !inputNode || !t.recorderNode) return;
+
+      // If master exists, we can optionally "count-in" align recordings.
+      // Here we just start immediately; quantization happens after stop.
+      t.isRecording = true;
+      t.ui.tag.textContent = "REC";
+      t.ui.tag.className = "tag rec";
+      t.ui.dot.className = "dot rec";
+
+      // stop playback while recording (optional; can be changed)
+      // Keep playing other tracks if they are playing (overdub style). We don't route output back to input.
+      t.recorderNode.port.postMessage({ type: "start" });
+
+      updateTrackUI(t);
+      updateGlobalButtons();
+    }
+
+    async function stopRecording(t){
+      if (!audioCtx || !t.recorderNode) return;
+
+      // Ask processor to send back chunks
+      const data = await new Promise((resolve) => {
+        const handler = (e) => {
+          const msg = e.data || {};
+          if (msg.type === "data"){
+            t.recorderNode.port.removeEventListener("message", handler);
+            resolve(msg);
+          }
+        };
+        t.recorderNode.port.addEventListener("message", handler);
+        t.recorderNode.port.postMessage({ type: "stop" });
+      });
+
+      t.isRecording = false;
+
+      // Build AudioBuffer from float32 chunks
+      const total = data.total || 0;
+      if (total < 512){
+        // too short -> ignore
+        updateTrackUI(t);
+        updateGlobalButtons();
+        return;
+      }
+
+      const sr = audioCtx.sampleRate;
+      const buf = audioCtx.createBuffer(1, total, sr);
+      const ch0 = buf.getChannelData(0);
+
+      let offset = 0;
+      for (const c of (data.chunks || [])){
+        ch0.set(c, offset);
+        offset += c.length;
+      }
+
+      // If first ever track and master isn't set: define master loop length
+      if (masterLoopSeconds == null){
+        setMasterLoop(buf.duration);
+      } else {
+        // Quantize to master
+        const q = quantizeToMasterBuffer(buf);
+        t.buffer = q;
+        updateTrackUI(t);
+        updateGlobalButtons();
+        return;
+      }
+
+      t.buffer = buf;
+      updateTrackUI(t);
+      updateGlobalButtons();
+    }
+
+    function toggleMainButton(t){
+      // Behavior: if not recorded yet -> start/stop recording.
+      // If recorded -> toggle play/stop.
+      if (!t.buffer){
+        if (!t.isRecording) startRecording(t);
+        else stopRecording(t);
+      } else {
+        if (!t.isPlaying) startPlayback(t);
+        else stopPlayback(t);
+      }
+    }
+
+    function updateTrackUI(t){
+      const { btnMain, tag, label, vol, muteBtn, clearBtn } = t.ui;
+
+      // tag + label
+      if (t.isRecording){
+        tag.textContent = "REC";
+        tag.className = "tag rec";
+        label.textContent = "registrazione…";
+      } else if (t.isPlaying){
+        tag.textContent = "PLAY";
+        tag.className = "tag play";
+        label.textContent = "in loop";
+      } else {
+        tag.textContent = "STOP";
+        tag.className = "tag stop";
+        label.textContent = t.buffer ? ("pronto • " + fmtSec(t.buffer.duration)) : "vuoto";
+      }
+
+      // main icon
+      // if empty -> REC/STOP icon
+      // if has buffer -> PLAY/STOP icon
+      const svg = btnMain.querySelector("svg");
+      const path = svg.querySelector("path");
+      if (!t.buffer){
+        // Recording state icon
+        if (t.isRecording){
+          // stop square
+          path.setAttribute("d", "M9 9h14v14H9z");
+          svg.style.stroke = "rgba(255,59,59,.95)";
+        } else {
+          // record circle
+          path.setAttribute("d", "M16 10a6 6 0 1 0 0 12a6 6 0 0 0 0-12Z");
+          svg.style.stroke = "rgba(255,59,59,.95)";
+        }
+      } else {
+        // Playback icon
+        if (t.isPlaying){
+          path.setAttribute("d", "M9 9h14v14H9z"); // stop
+          svg.style.stroke = "rgba(78,230,255,.95)";
+        } else {
+          path.setAttribute("d", "M12 10l12 6-12 6V10z"); // play
+          svg.style.stroke = "rgba(68,255,154,.95)";
+        }
+      }
+
+      // buttons enabled
+      clearBtn.disabled = !t.buffer && !t.isRecording;
+      muteBtn.disabled = !t.gainNode;
+
+      // volume label
+      vol.title = "Volume: " + Math.round(parseFloat(vol.value)*100) + "%";
+    }
+
+    function buildTrackCard(t){
+      const el = document.createElement("section");
+      el.className = "track";
+
+      el.innerHTML = `
+        <div class="track-head">
+          <div class="track-title">
+            <div class="n">${t.index+1}</div>
+            <div class="label" id="label">vuoto</div>
+          </div>
+          <div class="mini">
+            <span class="dot" id="dot"></span>
+            <span class="tag stop" id="tag">STOP</span>
+          </div>
+        </div>
+
+        <div class="track-body">
+          <div style="text-align:center;">
+            <div class="big-btn" id="btnMain" role="button" tabindex="0" aria-label="Record/Play">
+              <div class="ring"></div>
+              <div class="ring2"></div>
+              <div class="icon">
+                <svg viewBox="0 0 32 32" stroke="rgba(255,59,59,.95)">
+                  <path d="M16 10a6 6 0 1 0 0 12a6 6 0 0 0 0-12Z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="fader">
+            <label>VOL</label>
+            <input id="vol" type="range" min="0" max="1" step="0.01" value="0.85" />
+            <label id="volpct">85%</label>
+          </div>
+        </div>
+
+        <div class="track-actions">
+          <button class="btn" id="muteBtn">Mute</button>
+          <button class="btn" id="clearBtn">Clear</button>
+        </div>
+      `;
+
+      const btnMain = el.querySelector("#btnMain");
+      const tag = el.querySelector("#tag");
+      const label = el.querySelector("#label");
+      const dot = el.querySelector("#dot");
+      const vol = el.querySelector("#vol");
+      const volpct = el.querySelector("#volpct");
+      const muteBtn = el.querySelector("#muteBtn");
+      const clearBtn = el.querySelector("#clearBtn");
+
+      t.ui = { el, btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn };
+
+      btnMain.addEventListener("click", () => {
+        if (!isInitialized) return alert("Prima clicca: Attiva Audio");
+        toggleMainButton(t);
+      });
+      btnMain.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); btnMain.click(); }
+      });
+
+      vol.addEventListener("input", () => {
+        const v = parseFloat(vol.value);
+        volpct.textContent = Math.round(v*100) + "%";
+        if (t.gainNode) t.gainNode.gain.value = v;
+        updateTrackUI(t);
+      });
+
+      muteBtn.addEventListener("click", () => {
+        if (!t.gainNode) return;
+        const isMuted = t.gainNode.gain.value > 0.0001;
+        if (isMuted){
+          t._prevVol = parseFloat(vol.value);
+          t.gainNode.gain.value = 0;
+          vol.value = "0";
+        } else {
+          const pv = (t._prevVol != null) ? t._prevVol : 0.85;
+          t.gainNode.gain.value = pv;
+          vol.value = String(pv);
+        }
+        vol.dispatchEvent(new Event("input"));
+      });
+
+      clearBtn.addEventListener("click", () => {
+        clearTrack(t);
+      });
+
+      updateTrackUI(t);
+      return el;
+    }
+
+    function buildUI(){
+      grid.innerHTML = "";
+      tracks.length = 0;
+      for (let i=0; i<TRACKS; i++){
+        const t = createTrack(i);
+        tracks.push(t);
+        const card = buildTrackCard(t);
+        grid.appendChild(card);
+      }
+      updateGlobalButtons();
+    }
+
+    // ----------------------------
+    // Initialization
+    // ----------------------------
+    async function initAudio(){
+      if (isInitialized) return;
+
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      srEl.textContent = audioCtx.sampleRate + " Hz";
+
+      await ensureAudioWorklet();
+
+      // master gain -> destination
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.95;
+      masterGain.connect(audioCtx.destination);
+
+      // Input stream + node
+      inputStream = await getInputStream();
+      inputNode = audioCtx.createMediaStreamSource(inputStream);
+
+      // Create per-track gain nodes + recorder nodes
+      for (const t of tracks){
+        t.gainNode = audioCtx.createGain();
+        t.gainNode.gain.value = parseFloat(t.ui.vol.value);
+        t.gainNode.connect(masterGain);
+
+        // Each track gets its own recorder node fed by the same inputNode
+        t.recorderNode = new AudioWorkletNode(audioCtx, "recorder-processor", {
+          numberOfInputs: 1,
+          numberOfOutputs: 0,
+          channelCount: 1
+        });
+
+        // connect input -> recorder (only)
+        inputNode.connect(t.recorderNode);
+      }
+
+      // Try to resume context (iOS / autoplay policies)
+      await audioCtx.resume();
+
+      isInitialized = true;
+      setDots();
+      btnInit.textContent = "Audio attivo";
+      btnInit.disabled = true;
+
+      btnPlayAll.disabled = false;
+      btnStopAll.disabled = false;
+      btnClearAll.disabled = false;
+
+      updateGlobalButtons();
+    }
+
+    // ----------------------------
+    // Global buttons
+    // ----------------------------
+    btnInit.addEventListener("click", async () => {
+      try{
+        await initAudio();
+      } catch (e){
+        console.error(e);
+        alert("Impossibile attivare audio: " + (e?.message || e));
+      } finally {
+        setDots();
+      }
+    });
+
+    btnPlayAll.addEventListener("click", () => {
+      for (const t of tracks){
+        if (t.buffer && !t.isPlaying) startPlayback(t);
+      }
+      updateGlobalButtons();
+    });
+
+    btnStopAll.addEventListener("click", () => {
+      for (const t of tracks){
+        if (t.isPlaying) stopPlayback(t);
+        if (t.isRecording) stopRecording(t);
+      }
+      updateGlobalButtons();
+    });
+
+    btnClearAll.addEventListener("click", () => {
+      if (!confirm("Cancellare tutte le tracce?")) return;
+      for (const t of tracks) clearTrack(t);
+      masterLoopSeconds = null;
+      masterLenEl.textContent = "—";
+      updateGlobalButtons();
+    });
+
+    // If user changes source after init, we ask to reload (simplest + safest)
+    sourceSelect.addEventListener("change", () => {
+      if (isInitialized){
+        alert("Hai cambiato sorgente. Per applicarla, ricarica la pagina e riattiva l’audio.");
+      }
+    });
+
+    // Build initial UI
+    buildUI();
+
+    // Update dots periodically (context can be suspended)
+    setInterval(() => {
+      setDots();
+      if (audioCtx && audioCtx.state !== "running"){
+        dotAudio.classList.remove("on");
+      }
+    }, 500);
+
+  </script>
+</body>
+</html>
