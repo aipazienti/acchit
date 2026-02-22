@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Loopstation 8 Tracce (MediaRecorder)</title>
+  <title>Loopstation 8 Tracce + Metronomo</title>
   <style>
     :root{
       --bg:#0f1115; --text:#e7ecff; --muted:#a7b0d6;
@@ -19,12 +19,14 @@
                   var(--bg);
       min-height:100vh; display:flex; flex-direction:column; align-items:center;
     }
+
     header{
-      width:min(1100px, 94vw); padding:22px 10px 10px;
+      width:min(1100px, 94vw); padding:18px 10px 8px;
       display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
     }
     .title{font-size:28px; letter-spacing:.08em; font-weight:700; opacity:.95;}
     .top-controls{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center;}
+
     .btn{
       border:1px solid var(--stroke);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
@@ -37,6 +39,7 @@
     .btn-primary{border-color:rgba(78,230,255,.35);}
     .btn-good{border-color:rgba(68,255,154,.35);}
     .btn-danger{border-color:rgba(255,59,59,.35);}
+
     .pill{
       padding:9px 12px; border-radius:999px; border:1px solid var(--stroke);
       background: rgba(255,255,255,.03); color:var(--muted); display:flex; align-items:center; gap:10px;
@@ -45,6 +48,70 @@
       background: rgba(0,0,0,.25); border:1px solid var(--stroke2);
       color:var(--text); padding:7px 10px; border-radius:10px; outline:none;
     }
+
+    /* Metronome panel */
+    .metro-wrap{
+      width:min(1100px, 94vw);
+      padding: 0 10px 14px;
+    }
+    .metro{
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .metro-left{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    .metro-right{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
+
+    .metro-group{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      padding:8px 10px;
+      border:1px solid var(--stroke2);
+      border-radius:14px;
+      background: rgba(0,0,0,.18);
+    }
+    .metro-group label{font-size:12px; color:var(--muted);}
+    .metro-group input[type="range"]{width:160px; height:10px; margin:0; transform:none;}
+    .metro-group input[type="range"]{
+      -webkit-appearance:none; appearance:none;
+      border-radius:999px; background: rgba(255,255,255,.10);
+      outline:none;
+    }
+    .metro-group input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px; border-radius:50%;
+      background: rgba(255,255,255,.85); border:2px solid rgba(0,0,0,.35);
+      box-shadow:0 6px 18px rgba(0,0,0,.45); cursor:pointer;
+    }
+    .bpm{font-weight:700; min-width:64px; text-align:right;}
+    .leds{display:flex; gap:8px; align-items:center;}
+    .led{
+      width:12px; height:12px; border-radius:50%;
+      background:#3a3f52;
+      box-shadow: 0 0 0 2px rgba(255,255,255,.06) inset;
+      transition: transform .06s ease, filter .06s ease;
+    }
+    .led.on{
+      background: var(--cyan);
+      filter: drop-shadow(0 0 10px rgba(78,230,255,.65));
+      transform: scale(1.15);
+    }
+    .led.bar{
+      width:14px; height:14px;
+      background:#4a1f1f;
+    }
+    .led.bar.on{
+      background: var(--red);
+      filter: drop-shadow(0 0 12px rgba(255,59,59,.75));
+      transform: scale(1.2);
+    }
+
     .statusbar{
       width:min(1100px, 94vw); padding:0 10px 16px;
       display:flex; gap:12px; flex-wrap:wrap; align-items:center; color:var(--muted);
@@ -69,6 +136,7 @@
       background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       border:1px solid var(--stroke); border-radius:var(--radius);
       box-shadow:var(--shadow); padding:14px; position:relative; overflow:hidden;
+      touch-action: manipulation;
     }
     .track::before{
       content:""; position:absolute; inset:-30% -40%;
@@ -92,6 +160,7 @@
     .tag.stop{border-color:rgba(167,176,214,.35); color:var(--muted);}
 
     .track-body{display:grid; grid-template-columns:1fr 64px; gap:12px; align-items:center;}
+
     .big-btn{
       width:118px; height:118px; border-radius:999px; margin:6px auto 0;
       border:1px solid rgba(255,255,255,.10);
@@ -109,29 +178,33 @@
       background: rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.10);
     }
     .big-btn svg{width:30px; height:30px; fill:none; stroke-width:2.4;}
+
     .fader{
       display:flex; flex-direction:column; align-items:center; gap:8px;
       padding:8px 6px; border-radius:14px; border:1px solid var(--stroke2); background: rgba(0,0,0,.18);
     }
     .fader label{font-size:12px; color:var(--muted);}
-    input[type="range"]{
+    input[type="range"].vol{
       -webkit-appearance:none; appearance:none;
       width:140px; height:10px; border-radius:999px; background: rgba(255,255,255,.10);
       outline:none; transform: rotate(-90deg); margin:54px 0;
     }
-    input[type="range"]::-webkit-slider-thumb{
+    input[type="range"].vol::-webkit-slider-thumb{
       -webkit-appearance:none; appearance:none;
       width:18px; height:18px; border-radius:50%;
       background: rgba(255,255,255,.85); border:2px solid rgba(0,0,0,.35);
       box-shadow:0 6px 18px rgba(0,0,0,.45); cursor:pointer;
     }
+
     .track-actions{display:flex; gap:8px; margin-top:12px; justify-content:space-between;}
     .track-actions .btn{padding:9px 10px; border-radius:12px; flex:1; justify-content:center;}
+
     .footer-note{width:min(1100px, 94vw); padding:0 10px 26px; color:var(--muted); font-size:13px; line-height:1.4;}
     code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px solid var(--stroke2);}
   </style>
 </head>
 <body>
+
   <header>
     <div class="title">maracaloop A</div>
     <div class="top-controls">
@@ -149,10 +222,55 @@
     </div>
   </header>
 
+  <!-- Metronome -->
+  <div class="metro-wrap">
+    <div class="metro">
+      <div class="metro-left">
+        <div class="metro-group">
+          <label>Metronomo</label>
+          <button class="btn" id="btnMetro">ON</button>
+        </div>
+
+        <div class="metro-group">
+          <label>BPM</label>
+          <input id="bpm" type="range" min="60" max="120" step="1" value="90">
+          <div class="bpm"><span id="bpmVal">90</span></div>
+        </div>
+
+        <div class="metro-group">
+          <label>Misura</label>
+          <select id="tsig">
+            <option value="3">3/4</option>
+            <option value="4" selected>4/4</option>
+            <option value="5">5/4</option>
+            <option value="7">7/4</option>
+          </select>
+        </div>
+
+        <div class="metro-group">
+          <label>LED 1/4</label>
+          <div class="leds" id="beatLeds"></div>
+          <div class="leds" title="Downbeat">
+            <span class="led bar" id="barLed"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metro-right">
+        <div class="metro-group">
+          <label>Registrazione: quantizza a misura + extra</label>
+          <div style="color:var(--muted); font-size:12px;">
+            +<b>2/4</b> automatico, poi arrotonda al blocco misura
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="statusbar">
     <div class="badge"><span class="dot" id="dotAudio"></span> AudioContext</div>
     <div class="badge"><span class="dot" id="dotInput"></span> Ingresso</div>
-    <div class="badge">Loop master: <b id="masterLen">—</b></div>
+    <div class="badge">Master loop: <b id="masterLen">—</b></div>
     <div class="badge">SampleRate: <b id="sr">—</b></div>
     <div class="badge">Codec REC: <b id="codec">—</b></div>
   </div>
@@ -162,8 +280,8 @@
   <div class="footer-note">
     <ul>
       <li>Apri da <code>https://</code> o <code>http://localhost</code>. Evita <code>file://</code>.</li>
-      <li>La <b>prima traccia registrata</b> definisce la durata master. Le altre vengono adattate a quella durata.</li>
-      <li>“Scheda/Schermo con audio” dipende dal browser/OS: su Chrome desktop funziona bene con “Condividi scheda” + audio.</li>
+      <li>TAP breve sul cerchio: REC → (tap) STOP+PLAY → STOP → PLAY…</li>
+      <li>Pressione lunga (>3s) sul cerchio: conferma cancellazione traccia.</li>
     </ul>
   </div>
 
@@ -171,12 +289,19 @@
 (() => {
   const TRACKS = 8;
 
+  // Audio
   let audioCtx = null;
   let inputStream = null;
-  let inputNode = null;
   let masterGain = null;
 
+  // Master loop duration (seconds)
   let masterLoopSeconds = null;
+
+  // Metronome state
+  let metroOn = false;
+  let metroTimer = null;
+  let metroBeatIndex = 0; // 0..(N-1)
+  let nextBeatAtMs = 0;
 
   const grid = document.getElementById("grid");
   const btnInit = document.getElementById("btnInit");
@@ -190,6 +315,14 @@
   const masterLenEl = document.getElementById("masterLen");
   const srEl = document.getElementById("sr");
   const codecEl = document.getElementById("codec");
+
+  // Metronome UI
+  const btnMetro = document.getElementById("btnMetro");
+  const bpm = document.getElementById("bpm");
+  const bpmVal = document.getElementById("bpmVal");
+  const tsig = document.getElementById("tsig");
+  const beatLeds = document.getElementById("beatLeds");
+  const barLed = document.getElementById("barLed");
 
   const tracks = [];
 
@@ -211,13 +344,14 @@
   function updateGlobalButtons(){
     const anyHasBuffer = tracks.some(t => !!t.buffer);
     const anyPlaying = tracks.some(t => t.isPlaying);
+    const anyRecording = tracks.some(t => t.isRecording);
+
     btnPlayAll.disabled = !audioCtx || !anyHasBuffer;
-    btnStopAll.disabled = !audioCtx || (!anyPlaying && !tracks.some(t => t.isRecording));
+    btnStopAll.disabled = !audioCtx || (!anyPlaying && !anyRecording);
     btnClearAll.disabled = !audioCtx || !anyHasBuffer;
   }
 
   function pickBestMimeType(){
-    // Prefer opus in webm, fallback to mp4 if available (iOS Safari tends to mp4; Chrome usually webm/opus).
     const candidates = [
       'audio/webm;codecs=opus',
       'audio/webm',
@@ -228,9 +362,81 @@
     for (const c of candidates){
       if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) return c;
     }
-    return ''; // let browser choose
+    return '';
   }
 
+  function getBpm(){ return parseInt(bpm.value, 10); }
+  function getNumerator(){ return parseInt(tsig.value, 10); }
+  function beatSeconds(){ return 60 / getBpm(); }               // quarter note
+  function barSeconds(){ return getNumerator() * beatSeconds(); } // N/4
+
+  // +2/4 extra = 2 beats (quarters) before rounding to next bar block
+  function quantizeDurationSeconds(rawSeconds){
+    const extra = 2 * beatSeconds();
+    const target = rawSeconds + extra;
+    const bar = barSeconds();
+    const bars = Math.max(1, Math.ceil(target / bar));
+    return bars * bar;
+  }
+
+  function buildBeatLeds(){
+    beatLeds.innerHTML = "";
+    const n = getNumerator();
+    for (let i = 0; i < n; i++){
+      const s = document.createElement("span");
+      s.className = "led";
+      beatLeds.appendChild(s);
+    }
+    metroBeatIndex = 0;
+  }
+
+  function flashBeat(i){
+    const leds = beatLeds.querySelectorAll(".led");
+    leds.forEach((l, idx) => l.classList.toggle("on", idx === i));
+    // Downbeat extra red flash
+    if (i === 0){
+      barLed.classList.add("on");
+      setTimeout(() => barLed.classList.remove("on"), 110);
+    }
+    setTimeout(() => {
+      const l = leds[i];
+      if (l) l.classList.remove("on");
+    }, 90);
+  }
+
+  function stopMetronome(){
+    metroOn = false;
+    btnMetro.textContent = "ON";
+    if (metroTimer) clearTimeout(metroTimer);
+    metroTimer = null;
+    beatLeds.querySelectorAll(".led").forEach(l => l.classList.remove("on"));
+    barLed.classList.remove("on");
+  }
+
+  function startMetronome(){
+    metroOn = true;
+    btnMetro.textContent = "OFF";
+    metroBeatIndex = 0;
+    nextBeatAtMs = performance.now();
+
+    const tick = () => {
+      if (!metroOn) return;
+
+      const now = performance.now();
+      if (now >= nextBeatAtMs - 1){
+        flashBeat(metroBeatIndex);
+        metroBeatIndex = (metroBeatIndex + 1) % getNumerator();
+        nextBeatAtMs += beatSeconds() * 1000;
+      }
+
+      // schedule next check (lightweight)
+      metroTimer = setTimeout(tick, 10);
+    };
+
+    tick();
+  }
+
+  // Utilities
   async function getInputStream(){
     const mode = sourceSelect.value;
     if (mode === "mic"){
@@ -239,7 +445,6 @@
         video: false
       });
     }
-    // Screen/tab audio (support varies; on Chrome Desktop, "tab audio" works well)
     return await navigator.mediaDevices.getDisplayMedia({ audio:true, video:true });
   }
 
@@ -248,7 +453,6 @@
       for (const tr of inputStream.getTracks()) tr.stop();
       inputStream = null;
     }
-    inputNode = null;
   }
 
   function createTrack(index){
@@ -263,6 +467,14 @@
       isRecording: false,
       isPlaying: false,
 
+      // loop counter
+      loopCount: 0,
+      loopTimer: null,
+
+      // long press
+      longPressTimer: null,
+      longPressFired: false,
+
       ui: {}
     };
   }
@@ -274,8 +486,31 @@
       t.source = null;
     }
     t.isPlaying = false;
+    stopLoopCounter(t);
     updateTrackUI(t);
     updateGlobalButtons();
+  }
+
+  function startLoopCounter(t){
+    stopLoopCounter(t);
+    t.loopCount = 0;
+    const dur = t.buffer?.duration;
+    if (!dur || !isFinite(dur) || dur <= 0.01) return;
+
+    // increment every loop boundary (approximate)
+    t.loopTimer = setInterval(() => {
+      if (!t.isPlaying) return;
+      t.loopCount++;
+      updateTrackUI(t);
+    }, Math.max(50, dur * 1000));
+  }
+
+  function stopLoopCounter(t){
+    if (t.loopTimer){
+      clearInterval(t.loopTimer);
+      t.loopTimer = null;
+    }
+    t.loopCount = 0;
   }
 
   function startPlayback(t){
@@ -289,24 +524,26 @@
     src.loopEnd = t.buffer.duration;
     src.connect(t.gainNode);
     src.start();
+
     t.source = src;
     t.isPlaying = true;
+    startLoopCounter(t);
+
     updateTrackUI(t);
     updateGlobalButtons();
   }
 
   function clearTrack(t){
-    if (t.isRecording) stopRecording(t);
+    if (t.isRecording) stopRecording(t, { autoPlay: false });
     stopPlayback(t);
     t.buffer = null;
     updateTrackUI(t);
     updateGlobalButtons();
   }
 
-  function quantizeToMasterBuffer(buf){
-    if (masterLoopSeconds == null) return buf;
+  function quantizeToFixedSeconds(buf, seconds){
     const sr = buf.sampleRate;
-    const targetFrames = Math.max(1, Math.round(masterLoopSeconds * sr));
+    const targetFrames = Math.max(1, Math.round(seconds * sr));
     const chs = buf.numberOfChannels;
     const out = audioCtx.createBuffer(chs, targetFrames, sr);
 
@@ -317,7 +554,7 @@
         outData.set(inData.subarray(0, targetFrames));
       } else {
         outData.set(inData);
-        // rest stays zero (padding)
+        // rest is zero padding
       }
     }
     return out;
@@ -325,29 +562,36 @@
 
   async function blobToAudioBuffer(blob){
     const arrayBuf = await blob.arrayBuffer();
-    // decodeAudioData returns AudioBuffer
     return await audioCtx.decodeAudioData(arrayBuf);
+  }
+
+  function mixToMonoIfNeeded(decoded){
+    if (decoded.numberOfChannels <= 1) return decoded;
+    const mono = audioCtx.createBuffer(1, decoded.length, decoded.sampleRate);
+    const out = mono.getChannelData(0);
+    for (let ch=0; ch<decoded.numberOfChannels; ch++){
+      const d = decoded.getChannelData(ch);
+      for (let i=0; i<d.length; i++) out[i] += d[i] / decoded.numberOfChannels;
+    }
+    return mono;
   }
 
   function startRecording(t){
     if (!audioCtx || !inputStream) return;
-    if (!window.MediaRecorder) {
-      alert("MediaRecorder non disponibile in questo browser.");
-      return;
-    }
+    if (!window.MediaRecorder) return alert("MediaRecorder non disponibile in questo browser.");
     if (t.isRecording) return;
 
-    // If already had content, we replace it (no overdub in this version)
+    // Replace existing content (no overdub here)
     stopPlayback(t);
 
     t.recChunks = [];
     const mime = pickBestMimeType();
     codecEl.textContent = mime || "(auto)";
+
     let rec;
-    try{
+    try {
       rec = new MediaRecorder(inputStream, mime ? { mimeType: mime } : undefined);
-    } catch (e){
-      // fallback: try without options
+    } catch {
       rec = new MediaRecorder(inputStream);
       codecEl.textContent = "(fallback)";
     }
@@ -358,46 +602,56 @@
     rec.ondataavailable = (ev) => {
       if (ev.data && ev.data.size > 0) t.recChunks.push(ev.data);
     };
+
     rec.onerror = (ev) => {
       console.error("Recorder error", ev);
       alert("Errore registrazione: " + (ev?.error?.message || ev?.message || ev));
       t.isRecording = false;
+      t.recorder = null;
+      t.recChunks = [];
       updateTrackUI(t);
       updateGlobalButtons();
     };
+
+    rec.start(250);
+    updateTrackUI(t);
+    updateGlobalButtons();
+  }
+
+  // Stop recording and finalize. If autoPlay=true -> play immediately after buffer ready.
+  function stopRecording(t, { autoPlay } = { autoPlay: true }){
+    if (!t.recorder || !t.isRecording) return;
+
+    const rec = t.recorder;
+
     rec.onstop = async () => {
       try{
         const blob = new Blob(t.recChunks, { type: rec.mimeType || 'audio/webm' });
         if (blob.size < 2000){
-          // too small
           t.buffer = null;
-          t.isRecording = false;
-          updateTrackUI(t);
-          updateGlobalButtons();
           return;
         }
 
         const decoded = await blobToAudioBuffer(blob);
+        const mono = mixToMonoIfNeeded(decoded);
 
-        // Use mono mixdown if multi-channel (optional)
-        let buf = decoded;
-        if (decoded.numberOfChannels > 1){
-          const mono = audioCtx.createBuffer(1, decoded.length, decoded.sampleRate);
-          const out = mono.getChannelData(0);
-          // simple average
-          for (let ch=0; ch<decoded.numberOfChannels; ch++){
-            const d = decoded.getChannelData(ch);
-            for (let i=0; i<d.length; i++) out[i] += d[i] / decoded.numberOfChannels;
-          }
-          buf = mono;
-        }
+        // Quantize length to global time: +2/4 then round to next bar block
+        const qLen = quantizeDurationSeconds(mono.duration);
 
+        let buf = quantizeToFixedSeconds(mono, qLen);
+
+        // Master: first recorded track defines master loop length (but aligned to qLen)
         if (masterLoopSeconds == null){
-          setMasterLoop(buf.duration);
-          t.buffer = buf;
+          setMasterLoop(qLen);
         } else {
-          t.buffer = quantizeToMasterBuffer(buf);
+          // force to master
+          buf = quantizeToFixedSeconds(buf, masterLoopSeconds);
         }
+
+        t.buffer = buf;
+
+        // Auto-play on stop (requested)
+        if (autoPlay) startPlayback(t);
       } catch (e){
         console.error(e);
         alert("Errore decodifica audio: " + (e?.message || e));
@@ -410,45 +664,34 @@
       }
     };
 
-    // start
-    try{
-      rec.start(250); // timeslice: smoother on some devices
-    } catch (e){
-      console.error(e);
-      alert("Impossibile avviare registrazione: " + (e?.message || e));
-      t.isRecording = false;
-      t.recorder = null;
-    }
-
+    try { rec.stop(); } catch {}
+    // UI will update after onstop
     updateTrackUI(t);
     updateGlobalButtons();
   }
 
-  function stopRecording(t){
-    if (!t.recorder || !t.isRecording) return;
-    try{
-      t.recorder.stop();
-    } catch {}
-    // onstop will finalize buffer
-    updateTrackUI(t);
-    updateGlobalButtons();
-  }
+  // Main button behavior:
+  // - empty: tap -> REC, tap -> stopREC + autoplay
+  // - has buffer: tap -> toggle play/stop
+  async function onMainTap(t){
+    if (!audioCtx) return alert("Prima clicca: Attiva Audio");
+    try { await audioCtx.resume(); } catch {}
 
-  function toggleMainButton(t){
-    // Empty -> REC/STOP REC
-    // Has buffer -> PLAY/STOP
     if (!t.buffer){
       if (!t.isRecording) startRecording(t);
-      else stopRecording(t);
-    } else {
-      if (!t.isPlaying) startPlayback(t);
-      else stopPlayback(t);
+      else stopRecording(t, { autoPlay: true }); // stop + autoplay
+      return;
     }
+
+    // has buffer
+    if (t.isPlaying) stopPlayback(t);
+    else startPlayback(t);
   }
 
   function updateTrackUI(t){
     const { btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn } = t.ui;
 
+    // label includes loop count if playing
     if (t.isRecording){
       tag.textContent = "REC";
       tag.className = "tag rec";
@@ -458,7 +701,8 @@
       tag.textContent = "PLAY";
       tag.className = "tag play";
       dot.className = "dot play";
-      label.textContent = "in loop";
+      const lc = t.loopCount ? (" • x" + t.loopCount) : "";
+      label.textContent = "in loop" + lc;
     } else {
       tag.textContent = "STOP";
       tag.className = "tag stop";
@@ -466,23 +710,24 @@
       label.textContent = t.buffer ? ("pronto • " + fmtSec(t.buffer.duration)) : "vuoto";
     }
 
+    // icon
     const svg = btnMain.querySelector("svg");
     const path = svg.querySelector("path");
 
     if (!t.buffer){
       if (t.isRecording){
-        path.setAttribute("d", "M9 9h14v14H9z"); // stop square
+        path.setAttribute("d", "M9 9h14v14H9z");
         svg.style.stroke = "rgba(255,59,59,.95)";
       } else {
-        path.setAttribute("d", "M16 10a6 6 0 1 0 0 12a6 6 0 0 0 0-12Z"); // record circle
+        path.setAttribute("d", "M16 10a6 6 0 1 0 0 12a6 6 0 0 0 0-12Z");
         svg.style.stroke = "rgba(255,59,59,.95)";
       }
     } else {
       if (t.isPlaying){
-        path.setAttribute("d", "M9 9h14v14H9z"); // stop
+        path.setAttribute("d", "M9 9h14v14H9z");
         svg.style.stroke = "rgba(78,230,255,.95)";
       } else {
-        path.setAttribute("d", "M12 10l12 6-12 6V10z"); // play
+        path.setAttribute("d", "M12 10l12 6-12 6V10z");
         svg.style.stroke = "rgba(68,255,154,.95)";
       }
     }
@@ -492,6 +737,42 @@
 
     const v = parseFloat(vol.value);
     volpct.textContent = Math.round(v*100) + "%";
+  }
+
+  // Long press (>3s) on the main button triggers delete confirm
+  function attachLongPress(t, btnMain){
+    const start = (ev) => {
+      ev.preventDefault();
+      t.longPressFired = false;
+      t.longPressTimer = setTimeout(() => {
+        t.longPressFired = true;
+        if (!t.buffer && !t.isRecording) return;
+        const ok = confirm(`Cancellare traccia ${t.index+1}?`);
+        if (ok) clearTrack(t);
+      }, 3000);
+    };
+
+    const end = () => {
+      if (t.longPressTimer) clearTimeout(t.longPressTimer);
+      t.longPressTimer = null;
+    };
+
+    // pointer events cover mouse+touch on modern Chrome
+    btnMain.addEventListener("pointerdown", start, { passive:false });
+    btnMain.addEventListener("pointerup", end);
+    btnMain.addEventListener("pointercancel", end);
+    btnMain.addEventListener("pointerleave", end);
+
+    // click: if long press fired, ignore tap
+    btnMain.addEventListener("click", (ev) => {
+      if (t.longPressFired){
+        ev.preventDefault();
+        ev.stopPropagation();
+        t.longPressFired = false;
+        return;
+      }
+      onMainTap(t);
+    });
   }
 
   function buildTrackCard(t){
@@ -511,7 +792,7 @@
 
       <div class="track-body">
         <div style="text-align:center;">
-          <div class="big-btn" id="btnMain" role="button" tabindex="0" aria-label="Record/Play">
+          <div class="big-btn" id="btnMain" role="button" tabindex="0" aria-label="Record/Play (long press = clear)">
             <div class="ring"></div>
             <div class="ring2"></div>
             <div class="icon">
@@ -524,7 +805,7 @@
 
         <div class="fader">
           <label>VOL</label>
-          <input id="vol" type="range" min="0" max="1" step="0.01" value="0.85" />
+          <input class="vol" id="vol" type="range" min="0" max="1" step="0.01" value="0.85" />
           <label id="volpct">85%</label>
         </div>
       </div>
@@ -546,22 +827,22 @@
 
     t.ui = { el, btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn };
 
-    btnMain.addEventListener("click", async () => {
-      if (!audioCtx) return alert("Prima clicca: Attiva Audio");
-      // Ensure audio context running (mobile may suspend)
-      try { await audioCtx.resume(); } catch {}
-      toggleMainButton(t);
-    });
+    // long press + tap behavior
+    attachLongPress(t, btnMain);
+
+    // keyboard
     btnMain.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); btnMain.click(); }
     });
 
+    // volume
     vol.addEventListener("input", () => {
       const v = parseFloat(vol.value);
       if (t.gainNode) t.gainNode.gain.value = v;
       updateTrackUI(t);
     });
 
+    // mute
     muteBtn.addEventListener("click", () => {
       if (!t.gainNode) return;
       const currently = t.gainNode.gain.value;
@@ -577,7 +858,11 @@
       vol.dispatchEvent(new Event("input"));
     });
 
-    clearBtn.addEventListener("click", () => clearTrack(t));
+    // clear
+    clearBtn.addEventListener("click", () => {
+      const ok = confirm(`Cancellare traccia ${t.index+1}?`);
+      if (ok) clearTrack(t);
+    });
 
     updateTrackUI(t);
     return el;
@@ -604,14 +889,8 @@
     masterGain.gain.value = 0.95;
     masterGain.connect(audioCtx.destination);
 
-    // Ask user for input stream
     inputStream = await getInputStream();
 
-    // If screen capture includes video, we don't need it; but keep it running for audio to continue.
-    // Create input node for monitoring/optional future processing (not routed to output to avoid feedback).
-    inputNode = audioCtx.createMediaStreamSource(inputStream);
-
-    // Track gains
     for (const t of tracks){
       t.gainNode = audioCtx.createGain();
       t.gainNode.gain.value = parseFloat(t.ui.vol.value);
@@ -623,7 +902,6 @@
 
     btnInit.textContent = "Audio attivo";
     btnInit.disabled = true;
-
     updateGlobalButtons();
   }
 
@@ -648,7 +926,7 @@
 
   btnStopAll.addEventListener("click", () => {
     for (const t of tracks){
-      if (t.isRecording) stopRecording(t);
+      if (t.isRecording) stopRecording(t, { autoPlay:false });
       if (t.isPlaying) stopPlayback(t);
     }
     updateGlobalButtons();
@@ -668,13 +946,37 @@
     }
   });
 
-  // Init UI
+  // Metronome controls
+  btnMetro.addEventListener("click", () => {
+    if (metroOn) stopMetronome();
+    else startMetronome();
+  });
+
+  bpm.addEventListener("input", () => {
+    bpmVal.textContent = bpm.value;
+    // keep timing consistent: restart scheduler for clean beat alignment
+    if (metroOn){
+      stopMetronome();
+      startMetronome();
+    }
+  });
+
+  tsig.addEventListener("change", () => {
+    buildBeatLeds();
+    if (metroOn){
+      stopMetronome();
+      startMetronome();
+    }
+  });
+
+  // Init
   buildUI();
+  buildBeatLeds();
+  bpmVal.textContent = bpm.value;
 
   // Dots refresh
-  setInterval(() => {
-    setDots();
-  }, 500);
+  setInterval(() => setDots(), 500);
+
 })();
 </script>
 </body>
