@@ -319,6 +319,16 @@
         </div>
 
         <div class="metro-group">
+          <label>Auto-align</label>
+          <select id="autoAlign">
+            <option value="on" selected>ON</option>
+            <option value="off">OFF</option>
+          </select>
+          <span style="color:var(--muted); font-size:12px;">(max 30ms)</span>
+        </div>
+
+
+        <div class="metro-group">
           <label>Anticipo REC</label>
           <input id="leadMs" type="number" min="0" max="2000" step="10" value="880" />
           <label style="min-width:68px">ms</label>
@@ -410,6 +420,7 @@
   const mfSig = document.getElementById("mfSig");
 
   const syncModeSel = document.getElementById("syncMode");
+  const autoAlignSel = document.getElementById("autoAlign");
   const leadMsEl = document.getElementById("leadMs");
   const extraBeatsSel = document.getElementById("extraBeats");
   const btnCalibrate = document.getElementById("btnCalibrate");
@@ -418,6 +429,7 @@
   const tracks = [];
 
   function syncOn(){ return syncModeSel.value === "on"; }
+  function autoAlignOn(){ return !autoAlignSel || autoAlignSel.value === "on"; }
   function getLeadSeconds(){ return Math.max(0, parseFloat(leadMsEl.value || "0") / 1000); }
   function getExtraBeats(){ return parseInt(extraBeatsSel.value, 10); }
 
@@ -1113,6 +1125,79 @@
     return { fin, fout };
   }
 
+  function autoAlignStartToOnset(buf, maxShiftMs=30, lookaheadMs=140){
+    // Attempts to refine start alignment by removing tiny leading offset
+    // (e.g., MediaRecorder timing jitter) while keeping the SAME loop length.
+    //
+    // Strategy: detect onset within the first lookahead window using moving RMS
+    // and shift LEFT up to maxShiftMs. Pad end with zeros to keep length.
+    const sr = buf.sampleRate;
+    const chs = buf.numberOfChannels;
+    const maxShift = Math.max(0, Math.round((maxShiftMs/1000) * sr));
+    const look = Math.max(1, Math.round((lookaheadMs/1000) * sr));
+    const win = Math.max(32, Math.round(0.008 * sr)); // ~8ms RMS window
+
+    const N = buf.length;
+    const scanN = Math.min(N, look);
+
+    // Build mono energy proxy
+    const mono = new Float32Array(scanN);
+    for (let i=0; i<scanN; i++){
+      let s = 0;
+      for (let ch=0; ch<chs; ch++){
+        s += buf.getChannelData(ch)[i];
+      }
+      mono[i] = s / chs;
+    }
+
+    // Compute RMS over sliding windows (step 1 sample)
+    let maxRms = 0;
+    const rms = new Float32Array(scanN);
+    let sumsq = 0;
+    for (let i=0; i<scanN; i++){
+      const x = mono[i];
+      sumsq += x*x;
+      if (i >= win){
+        const y = mono[i-win];
+        sumsq -= y*y;
+      }
+      const denom = Math.max(1, Math.min(i+1, win));
+      const r = Math.sqrt(sumsq / denom);
+      rms[i] = r;
+      if (r > maxRms) maxRms = r;
+    }
+
+    // If too quiet, don't shift
+    if (maxRms < 0.004) return { buf, shiftSamples: 0 };
+
+    // Dynamic threshold: first onset when rms exceeds maxRms * 0.18
+    const thr = maxRms * 0.18;
+
+    let onset = -1;
+    for (let i=0; i<scanN; i++){
+      if (rms[i] >= thr){
+        onset = i;
+        break;
+      }
+    }
+    if (onset < 0) return { buf, shiftSamples: 0 };
+
+    // Only allow shifts up to maxShift
+    const shift = Math.min(onset, maxShift);
+    if (shift <= 0) return { buf, shiftSamples: 0 };
+
+    // Shift left by 'shift', pad end with zeros, same length
+    const out = audioCtx.createBuffer(chs, N, sr);
+    for (let ch=0; ch<chs; ch++){
+      const srcD = buf.getChannelData(ch);
+      const dstD = out.getChannelData(ch);
+      // Copy from shift..end into 0..end-shift
+      dstD.set(srcD.subarray(shift), 0);
+      // tail remains zeros
+    }
+    return { buf: out, shiftSamples: shift };
+  }
+
   function startRecordingNow(t){
     if (!audioCtx || !inputStream) return;
     if (!window.MediaRecorder) return alert("MediaRecorder non disponibile in questo browser.");
@@ -1181,6 +1266,12 @@
         const fixed = sliceBuffer(trimmed, 0, loopLen);
 
         t.rawBuffer = fixed;
+
+        // Optional micro-alignment: shift to first onset (keeps exact loop length)
+        if (autoAlignOn()) {
+          const aa = autoAlignStartToOnset(t.rawBuffer, 30, 140);
+          t.rawBuffer = aa.buf;
+        }
 
         const f = ensureMinFades(t);
         t.buffer = applyFadesToBuffer(t.rawBuffer, f.fin, f.fout);
@@ -1676,7 +1767,7 @@
 
   bpm.addEventListener("input", onTimingChange);
   tsig.addEventListener("change", onTimingChange);
-  [syncModeSel, leadMsEl, extraBeatsSel].forEach(el => el.addEventListener("change", () => {
+  [syncModeSel, autoAlignSel, leadMsEl, extraBeatsSel].forEach(el => el.addEventListener("change", () => {
     for (const t of tracks){
       cancelSchedule(t);
       t.ui.countBadge.style.display = "none";
