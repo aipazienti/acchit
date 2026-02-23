@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaracaPad • Metronomo + 12 Pad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        :root {
+            --accent: #22ff88;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', system-ui;
+        }
+        
+        .pad {
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .pad.playing {
+            transform: scale(1.15) !important;
+            box-shadow: 0 0 60px #22ff88, inset 0 0 30px #22ff88;
+        }
+        
+        .beat-light {
+            transition: all 0.08s linear;
+        }
+        
+        .beat-light.active {
+            transform: scale(1.35);
+            box-shadow: 0 0 50px #22ff88;
+        }
+        
+        .beat-light.accent {
+            box-shadow: 0 0 40px #ff2266;
+        }
+        
+        .trigger-active {
+            background-color: #22ff88 !important;
+            color: #111827 !important;
+            box-shadow: 0 0 20px #22ff88;
+        }
+        
+        .neon-text {
+            text-shadow: 0 0 20px #22ff88;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto p-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-10">
+            <div>
+                <h1 class="text-6xl font-bold neon-text tracking-tighter">MARACAPAD</h1>
+                <p class="text-emerald-400 text-sm mt-1">METRONOMO SILENZIOSO + 12 PAD LOOP</p>
+            </div>
+            
+            <div class="flex items-center gap-8">
+                <!-- BPM -->
+                <div class="flex flex-col items-center">
+                    <label class="text-xs text-zinc-400 mb-1">BPM</label>
+                    <div class="flex items-center gap-4">
+                        <input id="bpm-slider" 
+                               type="range" 
+                               min="60" max="120" value="90"
+                               class="w-48 accent-emerald-400">
+                        <span id="bpm-value" class="tabular-nums text-5xl font-bold w-20 text-right">90</span>
+                    </div>
+                </div>
+
+                <!-- Time Signature -->
+                <div class="flex flex-col items-center">
+                    <label class="text-xs text-zinc-400 mb-1">BATTUTE</label>
+                    <select id="time-sig" 
+                            class="bg-zinc-900 border border-zinc-700 text-white px-6 py-3 text-2xl focus:outline-none focus:border-emerald-400">
+                        <option value="3">3/4</option>
+                        <option value="4" selected>4/4</option>
+                        <option value="5">5/4</option>
+                        <option value="7">7/4</option>
+                    </select>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex flex-col gap-3">
+                    <button onclick="toggleMetronome()" 
+                            id="start-btn"
+                            class="px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xl rounded-xl transition-all active:scale-95">
+                        AVVIA
+                    </button>
+                    <button onclick="loadFolder()" 
+                            class="px-10 py-4 bg-zinc-800 hover:bg-zinc-700 border border-emerald-400 text-emerald-400 font-bold text-xl rounded-xl transition-all active:scale-95">
+                        CARICA CARTELLA MARACAPAD
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metronome Lights -->
+        <div class="mb-12">
+            <div class="text-center text-xs text-zinc-500 mb-4 tracking-widest">SPIE METRONOMO • QUARTO DI BATTUTA</div>
+            <div id="beat-container" class="flex justify-center gap-8"></div>
+        </div>
+
+        <!-- Pads -->
+        <div class="mb-6">
+            <div class="text-center text-xs text-zinc-500 mb-4 tracking-widest">12 PAD • CLICCA PER SUONARE • ATTIVA "BEAT" PER LOOP AUTOMATICO</div>
+            <div id="pads-grid" class="grid grid-cols-4 gap-6"></div>
+        </div>
+
+        <!-- Footer info -->
+        <div class="text-center text-zinc-500 text-xs mt-12">
+            <p>Carica automaticamente tutti i file audio dalla cartella <span class="text-emerald-400">../Download/maracapad</span> (usa il pulsante sopra)</p>
+            <p class="mt-1">I suoni selezionati con "BEAT" suonano automaticamente ogni quarto di battuta al BPM impostato</p>
+            <p class="mt-3 text-emerald-500/70">Funziona meglio su Chrome / Edge</p>
+        </div>
+    </div>
+
+    <script>
+        // ====================== VARIABILI GLOBALI ======================
+        let bpm = 90;
+        let beatsPerBar = 4;
+        let isRunning = false;
+        let currentBeat = 0;
+        let intervalId = null;
+        let msPerBeat = 666; // 60000 / 90
+        
+        let pads = [];
+        let beatLights = [];
+        
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // ====================== TAILWIND INIT ======================
+        function initTailwind() {
+            // Tailwind CDN already loaded
+        }
+
+        // ====================== CREA I 12 PAD ======================
+        function createPads() {
+            const grid = document.getElementById('pads-grid');
+            grid.innerHTML = '';
+            pads = [];
+            
+            const colors = [
+                'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500',
+                'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500',
+                'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-violet-500'
+            ];
+            
+            for (let i = 0; i < 12; i++) {
+                const padEl = document.createElement('div');
+                padEl.className = `
+                    pad ${colors[i]} w-full aspect-square rounded-3xl flex flex-col 
+                    items-center justify-center cursor-pointer border-8 border-zinc-900 
+                    shadow-2xl hover:border-white/30 text-white relative overflow-hidden
+                `;
+                
+                // Label
+                const label = document.createElement('div');
+                label.className = 'text-2xl font-bold tracking-widest mb-1';
+                label.textContent = `PAD ${String(i+1).padStart(2, '0')}`;
+                
+                // Filename
+                const nameEl = document.createElement('div');
+                nameEl.className = 'text-[10px] text-white/70 text-center px-4 truncate w-full';
+                nameEl.textContent = 'VUOTO';
+                
+                // Trigger button
+                const triggerBtn = document.createElement('button');
+                triggerBtn.className = `
+                    mt-6 text-[10px] px-5 py-2 bg-black/40 hover:bg-black/60 
+                    border border-white/30 rounded-2xl transition-all
+                `;
+                triggerBtn.textContent = 'BEAT';
+                triggerBtn.onclick = (e) => {
+                    e.stopImmediatePropagation();
+                    toggleTrigger(i);
+                };
+                
+                padEl.appendChild(label);
+                padEl.appendChild(nameEl);
+                padEl.appendChild(triggerBtn);
+                
+                // Click pad
+                padEl.onclick = () => {
+                    if (!pads[i].audio) {
+                        loadSingleSound(i);
+                    } else {
+                        playPad(i);
+                    }
+                };
+                
+                grid.appendChild(padEl);
+                
+                pads.push({
+                    audio: null,
+                    name: `PAD ${i+1}`,
+                    triggerOnBeat: false,
+                    element: padEl,
+                    nameElement: nameEl,
+                    triggerElement: triggerBtn
+                });
+            }
+        }
+
+        // ====================== CREA SPIE METRONOMO ======================
+        function createBeatLights() {
+            const container = document.getElementById('beat-container');
+            container.innerHTML = '';
+            beatLights = [];
+            
+            for (let i = 0; i < beatsPerBar; i++) {
+                const light = document.createElement('div');
+                light.className = `
+                    beat-light w-16 h-16 rounded-2xl border-8 border-zinc-700 flex items-center justify-center 
+                    text-3xl font-black shadow-inner
+                    ${i === 0 ? 'bg-red-600 border-red-400' : 'bg-zinc-600'}
+                `;
+                light.textContent = i + 1;
+                container.appendChild(light);
+                beatLights.push(light);
+            }
+        }
+
+        // ====================== AGGIORNA SPIE ======================
+        function updateBeatLights() {
+            beatLights.forEach((light, index) => {
+                light.classList.remove('active', 'accent');
+                
+                if (index === currentBeat) {
+                    light.classList.add('active');
+                    if (index === 0) light.classList.add('accent');
+                }
+            });
+        }
+
+        // ====================== TICK METRONOMO ======================
+        function tick() {
+            updateBeatLights();
+            
+            // Suona tutti i pad con trigger attivo
+            pads.forEach(pad => {
+                if (pad.triggerOnBeat && pad.audio) {
+                    pad.audio.currentTime = 0;
+                    pad.audio.play().catch(() => {});
+                    
+                    // Flash visivo sul pad
+                    pad.element.classList.add('playing');
+                    setTimeout(() => {
+                        pad.element.classList.remove('playing');
+                    }, 120);
+                }
+            });
+            
+            currentBeat = (currentBeat + 1) % beatsPerBar;
+        }
+
+        // ====================== AVVIA / FERMA ======================
+        function toggleMetronome() {
+            const btn = document.getElementById('start-btn');
+            
+            if (isRunning) {
+                clearInterval(intervalId);
+                isRunning = false;
+                btn.textContent = 'AVVIA';
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.classList.add('bg-emerald-500', 'text-black');
+                
+                // Spegni tutte le spie
+                beatLights.forEach(l => l.classList.remove('active', 'accent'));
+            } else {
+                msPerBeat = Math.round(60000 / bpm);
+                currentBeat = 0;
+                isRunning = true;
+                btn.textContent = 'FERMA';
+                btn.classList.remove('bg-emerald-500', 'text-black');
+                btn.classList.add('bg-red-500', 'text-white');
+                
+                tick(); // primo tick immediato
+                intervalId = setInterval(tick, msPerBeat);
+            }
+        }
+
+        // ====================== PLAY SINGOLO PAD ======================
+        function playPad(index) {
+            const pad = pads[index];
+            if (!pad.audio) return;
+            
+            pad.audio.currentTime = 0;
+            pad.audio.play().catch(() => {});
+            
+            // Flash pad
+            pad.element.classList.add('playing');
+            setTimeout(() => pad.element.classList.remove('playing'), 150);
+        }
+
+        // ====================== TOGGLE TRIGGER ======================
+        function toggleTrigger(index) {
+            const pad = pads[index];
+            pad.triggerOnBeat = !pad.triggerOnBeat;
+            
+            if (pad.triggerOnBeat) {
+                pad.triggerElement.classList.add('trigger-active');
+                pad.triggerElement.textContent = '✓ BEAT';
+            } else {
+                pad.triggerElement.classList.remove('trigger-active');
+                pad.triggerElement.textContent = 'BEAT';
+            }
+        }
+
+        // ====================== CARICA SINGOLO SUONO ======================
+        function loadSingleSound(index) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'audio/*';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const url = URL.createObjectURL(file);
+                const audio = new Audio(url);
+                audio.preload = 'auto';
+                
+                pads[index].audio = audio;
+                pads[index].name = file.name.replace(/\.[^/.]+$/, "").toUpperCase();
+                pads[index].nameElement.textContent = pads[index].name;
+                
+                // Cambia bordo pad quando caricato
+                pads[index].element.style.borderColor = '#22ff88';
+            };
+            
+            input.click();
+        }
+
+        // ====================== CARICA CARTELLA AUTOMATICA ======================
+        async function loadFolder() {
+            if (!('showDirectoryPicker' in window)) {
+                alert("❌ Il tuo browser non supporta il caricamento automatico della cartella.\n\nUsa Chrome o Edge e clicca di nuovo.");
+                return;
+            }
+            
+            try {
+                const dirHandle = await window.showDirectoryPicker({
+                    startIn: 'downloads'
+                });
+                
+                const audioFiles = [];
+                
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file') {
+                        const file = await entry.getFile();
+                        const ext = file.name.toLowerCase().match(/\.(mp3|wav|ogg|m4a|aac|flac)$/);
+                        if (ext) {
+                            audioFiles.push({file, name: file.name});
+                        }
+                    }
+                }
+                
+                if (audioFiles.length === 0) {
+                    alert("Nessun file audio trovato nella cartella!");
+                    return;
+                }
+                
+                // Ordina alfabeticamente
+                audioFiles.sort((a, b) => a.name.localeCompare(b.name));
+                
+                // Carica fino a 12
+                const toLoad = Math.min(12, audioFiles.length);
+                
+                for (let i = 0; i < toLoad; i++) {
+                    const {file, name} = audioFiles[i];
+                    const url = URL.createObjectURL(file);
+                    const audio = new Audio(url);
+                    audio.preload = 'auto';
+                    
+                    pads[i].audio = audio;
+                    pads[i].name = name.replace(/\.[^/.]+$/, "").toUpperCase();
+                    pads[i].nameElement.textContent = pads[i].name;
+                    pads[i].element.style.borderColor = '#22ff88';
+                }
+                
+                if (audioFiles.length > 12) {
+                    alert(`✅ Caricati i primi 12 suoni su  ${audioFiles.length} trovati`);
+                } else {
+                    alert(`✅ Caricati ${audioFiles.length} suoni dalla cartella maracapad!`);
+                }
+                
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    alert("Errore durante il caricamento della cartella.\nAssicurati di selezionare la cartella \"maracapad\"");
+                }
+            }
+        }
+
+        // ====================== AGGIORNA BPM ======================
+        function updateBPM() {
+            bpm = parseInt(document.getElementById('bpm-slider').value);
+            document.getElementById('bpm-value').textContent = bpm;
+            
+            if (isRunning) {
+                clearInterval(intervalId);
+                msPerBeat = Math.round(60000 / bpm);
+                intervalId = setInterval(tick, msPerBeat);
+            }
+        }
+
+        // ====================== CAMBIA TEMPO ======================
+        function changeTimeSignature() {
+            const val = parseInt(document.getElementById('time-sig').value);
+            beatsPerBar = val;
+            
+            createBeatLights();
+            
+            if (isRunning) {
+                currentBeat = 0;
+                clearInterval(intervalId);
+                msPerBeat = Math.round(60000 / bpm);
+                intervalId = setInterval(tick, msPerBeat);
+                tick();
+            }
+        }
+
+        // ====================== INIT ======================
+        function initializeApp() {
+            initTailwind();
+            createPads();
+            createBeatLights();
+            
+            // BPM slider
+            const bpmSlider = document.getElementById('bpm-slider');
+            bpmSlider.addEventListener('input', updateBPM);
+            
+            // Time signature
+            document.getElementById('time-sig').addEventListener('change', changeTimeSignature);
+            
+            // Imposta valori iniziali
+            document.getElementById('bpm-value').textContent = bpm;
+            msPerBeat = Math.round(60000 / bpm);
+            
+            // Messaggio di benvenuto dopo 800ms
+            setTimeout(() => {
+                console.log('%cMaracaPad caricato! 🎹', 'color:#22ff88; font-size:14px');
+            }, 800);
+        }
+
+        // Avvio
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
