@@ -325,6 +325,12 @@
         </div>
 
         <div class="metro-group">
+          <label>Calibrazione</label>
+          <button class="btn" id="btnCalibrate" disabled>Prova inizio REC</button>
+          <span style="color:var(--muted); font-size:12px;" id="calibStatus">—</span>
+        </div>
+
+        <div class="metro-group">
           <label>Extra fine (1/4)</label>
           <select id="extraBeats">
             <option value="0">0</option>
@@ -405,6 +411,8 @@
   const syncModeSel = document.getElementById("syncMode");
   const leadMsEl = document.getElementById("leadMs");
   const extraBeatsSel = document.getElementById("extraBeats");
+  const btnCalibrate = document.getElementById("btnCalibrate");
+  const calibStatus = document.getElementById("calibStatus");
 
   const tracks = [];
 
@@ -646,6 +654,190 @@
     const ms = t.buffer ? Math.round(t.buffer.duration*1000) : 0;
     return safeFileName(`track_${t.index+1}_${t.bars}bars_${ts}-4_${bpmVal}bpm_${ms}ms.wav`);
   }
+
+  // ==== Calibration (estimate extra latency and auto-set Anticipo REC) ====
+  // Idea:
+  // - We schedule a short "click" at a bar boundary (downbeat) using AudioContext (sample-accurate).
+  // - We record from mic with MediaRecorder starting earlier by current lead (Anticipo REC).
+  // - We decode the recorded audio, detect the click position, and compute timing error vs expected.
+  // - We adjust leadMs = leadMs + errorMs (clamped), so future recordings align closer to grid.
+  //
+  // NOTE: Works best when the device speakers are audible to the mic.
+  // On some phones with echo-cancellation forced by the OS, the click may be attenuated.
+
+  function setCalibStatus(txt){
+    if (!calibStatus) return;
+    calibStatus.textContent = txt;
+  }
+
+  function playCalibrationClick(atTime){
+    if (!audioCtx) return;
+
+    const osc = audioCtx.createOscillator();
+    osc.type = "square";
+    osc.frequency.value = 1200;
+
+    const g = audioCtx.createGain();
+    g.gain.value = 0.0001;
+
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+
+    // Fast envelope to create a tick
+    const t0 = atTime;
+    const t1 = atTime + 0.012;
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t1);
+
+    osc.start(t0);
+    osc.stop(t1 + 0.02);
+
+    osc.onended = () => {
+      try { osc.disconnect(); } catch {}
+      try { g.disconnect(); } catch {}
+    };
+  }
+
+  function detectClickTimeSeconds(buf){
+    // Return time (seconds) of the strongest transient (first significant peak).
+    // Simple robust approach:
+    // 1) find global max abs
+    // 2) set threshold = max * 0.35
+    // 3) find first index where abs(sample) crosses threshold
+    // If no crossing, return null.
+    const data = buf.getChannelData(0);
+    let max = 0;
+    for (let i=0; i<data.length; i++){
+      const a = Math.abs(data[i]);
+      if (a > max) max = a;
+    }
+    if (max < 0.02) return null; // too quiet / not detected
+    const thr = max * 0.35;
+    for (let i=0; i<data.length; i++){
+      if (Math.abs(data[i]) >= thr){
+        return i / buf.sampleRate;
+      }
+    }
+    return null;
+  }
+
+  async function runCalibration(){
+    if (!audioCtx || !inputStream) return;
+
+    // Prefer mic; screen capture may not include device output.
+    if (sourceSelect.value !== "mic"){
+      const ok = confirm("La calibrazione funziona meglio con Microfono. Vuoi continuare?");
+      if (!ok) return;
+    }
+
+    // Stop any pending schedules / countdowns / recordings
+    for (const t of tracks){
+      cancelCountdown(t);
+      cancelSchedule(t);
+      if (t.isRecording) stopRecording(t, { autoPlay:false });
+    }
+    updateGlobalButtons();
+
+    await audioCtx.resume();
+
+    if (syncOn()) ensureGridStartArmed();
+
+    // We calibrate on next bar boundary
+    const desiredStartAt = syncOn()
+      ? nextBarTime(audioCtx.currentTime + 0.20)
+      : (audioCtx.currentTime + 0.20);
+
+    const lead = getLeadSeconds();
+    const recorderStartAt = Math.max(audioCtx.currentTime + 0.02, desiredStartAt - lead);
+    const effectiveLead = Math.max(0, desiredStartAt - recorderStartAt);
+
+    // Record for 2 bars to ensure we capture the click even with large delays
+    const recLen = (2 * barSeconds()) + (getExtraBeats() * beatSeconds());
+
+    const stopAt = desiredStartAt + recLen;
+
+    // Temporary MediaRecorder capture
+    const mime = pickBestMimeType();
+    setCalibStatus("arm…");
+    btnCalibrate.disabled = true;
+
+    let rec;
+    try {
+      rec = new MediaRecorder(inputStream, mime ? { mimeType: mime } : undefined);
+    } catch {
+      rec = new MediaRecorder(inputStream);
+    }
+
+    const chunks = [];
+    rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onerror = (ev) => {
+      console.error(ev);
+      setCalibStatus("errore recorder");
+      btnCalibrate.disabled = false;
+    };
+
+    const now = audioCtx.currentTime;
+    const startDelayMs = Math.max(0, (recorderStartAt - now) * 1000);
+    const stopDelayMs  = Math.max(0, (stopAt - now) * 1000);
+
+    setCalibStatus(`start in ${(startDelayMs/1000).toFixed(2)}s`);
+    const startTimeout = setTimeout(() => {
+      try { rec.start(250); } catch(e){ console.error(e); }
+      setCalibStatus("recording… (non parlare)");
+    }, startDelayMs);
+
+    // schedule click exactly at desiredStartAt
+    playCalibrationClick(desiredStartAt);
+
+    const stopTimeout = setTimeout(() => {
+      try { rec.stop(); } catch(e){ console.error(e); }
+    }, stopDelayMs);
+
+    rec.onstop = async () => {
+      try{
+        clearTimeout(startTimeout);
+        clearTimeout(stopTimeout);
+
+        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        if (blob.size < 2000){
+          setCalibStatus("audio troppo piccolo");
+          return;
+        }
+        const decoded = await blobToAudioBuffer(blob);
+        const mono = mixToMonoIfNeeded(decoded);
+
+        // Trim start at effectiveLead (what we *think* aligns to bar 0), then detect click
+        const trimmed = sliceBuffer(mono, effectiveLead, Math.min(mono.duration, 3*barSeconds()));
+        const clickT = detectClickTimeSeconds(trimmed);
+
+        if (clickT == null){
+          setCalibStatus("click non rilevato (alza volume)");
+          return;
+        }
+
+        // If click appears at clickT after "0", then we are late by clickT.
+        // We want click at ~0s, so increase lead by clickT.
+        // If clickT negative not possible here.
+        const errorMs = clickT * 1000;
+
+        const currentMs = Math.max(0, parseFloat(leadMsEl.value || "0"));
+        const newMs = Math.max(0, Math.min(2000, Math.round(currentMs + errorMs)));
+
+        leadMsEl.value = String(newMs);
+
+        setCalibStatus(`OK • +${Math.round(errorMs)}ms → lead ${newMs}ms`);
+      } catch(e){
+        console.error(e);
+        setCalibStatus("errore calibrazione");
+      } finally {
+        btnCalibrate.disabled = false;
+      }
+    };
+  }
+
+
 
   // Tracks
   function createTrack(index){
@@ -1291,6 +1483,8 @@
 
     btnInit.textContent = "Audio attivo";
     btnInit.disabled = true;
+    if (btnCalibrate) btnCalibrate.disabled = false;
+    setCalibStatus("pronto");
     updateGlobalButtons();
   }
 
@@ -1323,6 +1517,8 @@
     }
     updateGlobalButtons();
   });
+
+  btnCalibrate.addEventListener("click", () => { runCalibration(); });
 
   btnClearAll.addEventListener("click", () => {
     if (!confirm("Cancellare tutte le tracce?")) return;
@@ -1400,6 +1596,7 @@
   if (mfSig) mfSig.textContent = tsig.value + "/4";
   updateTimingBadges();
   srEl.textContent = "—";
+  setCalibStatus("attiva audio");
   setInterval(() => setDots(), 500);
 })();
 </script>
