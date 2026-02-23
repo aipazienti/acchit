@@ -357,6 +357,7 @@
   <div class="footer-note">
     <ul>
       <li>Ogni traccia esporta un file <b>.wav</b> (PCM 16-bit) della lunghezza completa della traccia.</li>
+      <li>Fade In/Out (ms): riduce i click/rumori all’inizio e alla fine del loop (minimo automatico 3ms).</li>
       <li>Su Chrome Android, il download può aprire il file invece di salvarlo: dipende dalle impostazioni del device.</li>
     </ul>
   </div>
@@ -843,6 +844,7 @@
   function createTrack(index){
     return {
       index,
+      rawBuffer: null,
       buffer: null,
       source: null,
       gainNode: null,
@@ -857,6 +859,8 @@
       // config
       bars: 8,
       countInBars: 4,
+      fadeInMs: 10,
+      fadeOutMs: 10,
 
       // planned alignment
       plannedLeadSec: 0,
@@ -964,6 +968,7 @@
 
     stopPlayback(t);
     t.buffer = null;
+    t.rawBuffer = null;
 
     updateTrackUI(t);
     updateGlobalButtons();
@@ -1064,6 +1069,50 @@
     return out;
   }
 
+  function applyFadesToBuffer(buf, fadeInMs, fadeOutMs){
+    // Creates a new AudioBuffer with linear fade-in/out to reduce clicks at edges.
+    const sr = buf.sampleRate;
+    const chs = buf.numberOfChannels;
+    const out = audioCtx.createBuffer(chs, buf.length, sr);
+
+    const fin = Math.max(0, Math.round((fadeInMs/1000) * sr));
+    const fout = Math.max(0, Math.round((fadeOutMs/1000) * sr));
+
+    for (let ch=0; ch<chs; ch++){
+      const srcD = buf.getChannelData(ch);
+      const dstD = out.getChannelData(ch);
+      dstD.set(srcD);
+
+      // Fade-in
+      if (fin > 1){
+        const n = Math.min(fin, dstD.length);
+        for (let i=0; i<n; i++){
+          dstD[i] *= (i / (n-1));
+        }
+      }
+
+      // Fade-out
+      if (fout > 1){
+        const n = Math.min(fout, dstD.length);
+        const start = dstD.length - n;
+        for (let i=0; i<n; i++){
+          const g = 1 - (i / (n-1));
+          dstD[start + i] *= g;
+        }
+      }
+    }
+    return out;
+  }
+
+  function ensureMinFades(t){
+    // Always apply a minimal fade to kill first/last sample click.
+    // If user set 0, we still enforce 3ms.
+    const minMs = 3;
+    const fin = Math.max(minMs, t.fadeInMs ?? 10);
+    const fout = Math.max(minMs, t.fadeOutMs ?? 10);
+    return { fin, fout };
+  }
+
   function startRecordingNow(t){
     if (!audioCtx || !inputStream) return;
     if (!window.MediaRecorder) return alert("MediaRecorder non disponibile in questo browser.");
@@ -1116,6 +1165,7 @@
         const blob = new Blob(t.recChunks, { type: rec.mimeType || 'audio/webm' });
         if (blob.size < 2000){
           t.buffer = null;
+    t.rawBuffer = null;
           return;
         }
 
@@ -1130,7 +1180,10 @@
         const trimmed = sliceBuffer(mono, trimStart, loopLen + extraEnd);
         const fixed = sliceBuffer(trimmed, 0, loopLen);
 
-        t.buffer = fixed;
+        t.rawBuffer = fixed;
+
+        const f = ensureMinFades(t);
+        t.buffer = applyFadesToBuffer(t.rawBuffer, f.fin, f.fout);
 
         if (autoPlay) startPlayback(t);
       } catch (e){
@@ -1364,7 +1417,6 @@
           <label id="volpct">85%</label>
         </div>
       </div>
-
       <div class="track-settings">
         <div class="pill">
           <span>REC</span>
@@ -1383,6 +1435,16 @@
             <option value="8">8</option>
           </select>
           <span>bars</span>
+        </div>
+        <div class="pill">
+          <span>FADE IN</span>
+          <input id="fadeInMs" type="number" min="0" max="200" step="1" value="10" style="width:72px" />
+          <span>ms</span>
+        </div>
+        <div class="pill">
+          <span>FADE OUT</span>
+          <input id="fadeOutMs" type="number" min="0" max="200" step="1" value="10" style="width:72px" />
+          <span>ms</span>
         </div>
       </div>
 
@@ -1404,9 +1466,11 @@
     const clearBtn = el.querySelector("#clearBtn");
     const barsSel = el.querySelector("#barsSel");
     const countSel = el.querySelector("#countSel");
+    const fadeInMsEl = el.querySelector("#fadeInMs");
+    const fadeOutMsEl = el.querySelector("#fadeOutMs");
     const countBadge = el.querySelector("#countBadge");
 
-    t.ui = { el, btnMain, tag, label, dot, vol, volpct, saveBtn, muteBtn, clearBtn, barsSel, countSel, countBadge };
+    t.ui = { el, btnMain, tag, label, dot, vol, volpct, saveBtn, muteBtn, clearBtn, barsSel, countSel, fadeInMsEl, fadeOutMsEl, countBadge };
 
     barsSel.addEventListener("change", () => {
       t.bars = parseInt(barsSel.value, 10);
@@ -1417,6 +1481,28 @@
       t.countInBars = parseInt(countSel.value, 10);
       updateTrackUI(t);
     });
+
+    fadeInMsEl.addEventListener("change", () => {
+      t.fadeInMs = Math.max(0, Math.min(200, parseInt(fadeInMsEl.value || "0", 10)));
+      fadeInMsEl.value = String(t.fadeInMs);
+      if (t.rawBuffer) {
+        t.buffer = applyFadesToBuffer(t.rawBuffer, t.fadeInMs, t.fadeOutMs);
+        if (t.isPlaying) startPlayback(t); // restart synced
+      }
+      updateTrackUI(t);
+    });
+    fadeOutMsEl.addEventListener("change", () => {
+      t.fadeOutMs = Math.max(0, Math.min(200, parseInt(fadeOutMsEl.value || "0", 10)));
+      fadeOutMsEl.value = String(t.fadeOutMs);
+      if (t.rawBuffer) {
+        t.buffer = applyFadesToBuffer(t.rawBuffer, t.fadeInMs, t.fadeOutMs);
+        if (t.isPlaying) startPlayback(t);
+      }
+      updateTrackUI(t);
+    });
+
+    fadeInMsEl.value = String(t.fadeInMs);
+    fadeOutMsEl.value = String(t.fadeOutMs);
 
     attachLongPress(t, btnMain);
 
