@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Loopstation 8 Tracce + Metronomo + Sync Grid</title>
+  <title>Loopstation 8 Tracce • Metronomo Grid • Per-Track Bars</title>
   <style>
     :root{
       --bg:#0f1115; --text:#e7ecff; --muted:#a7b0d6;
@@ -44,10 +44,11 @@
       padding:9px 12px; border-radius:999px; border:1px solid var(--stroke);
       background: rgba(255,255,255,.03); color:var(--muted); display:flex; align-items:center; gap:10px;
     }
-    .pill select{
+    .pill select, .pill input{
       background: rgba(0,0,0,.25); border:1px solid var(--stroke2);
       color:var(--text); padding:7px 10px; border-radius:10px; outline:none;
     }
+    .pill input{width:100px}
 
     /* Metronome panel */
     .metro-wrap{ width:min(1100px, 94vw); padding: 0 10px 14px; }
@@ -105,24 +106,6 @@
       transform: scale(1.2);
     }
 
-    .countin{
-      font-size:12px;
-      color: var(--muted);
-      padding:6px 10px;
-      border:1px solid var(--stroke2);
-      border-radius:999px;
-      background: rgba(0,0,0,.22);
-      min-width: 210px;
-      text-align:center;
-      user-select:none;
-    }
-    .countin.active{
-      color:#ffd0d0;
-      border-color: rgba(255,59,59,.35);
-      background: rgba(255,59,59,.08);
-      box-shadow: 0 0 18px rgba(255,59,59,.10);
-    }
-
     .statusbar{
       width:min(1100px, 94vw); padding:0 10px 16px;
       display:flex; gap:12px; flex-wrap:wrap; align-items:center; color:var(--muted);
@@ -157,7 +140,7 @@
     }
     .track > *{position:relative;}
     .track-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
-    .track-title{display:flex; align-items:baseline; gap:10px;}
+    .track-title{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
     .track-title .n{font-weight:800; font-size:18px; opacity:.95;}
     .track-title .label{font-size:13px; color:var(--muted);}
     .mini{display:flex; gap:8px; align-items:center;}
@@ -165,6 +148,7 @@
       font-size:12px; padding:4px 8px; border:1px solid var(--stroke2);
       border-radius:999px; color:var(--muted); background: rgba(0,0,0,.22);
       letter-spacing:.04em; text-transform:uppercase;
+      white-space:nowrap;
     }
     .tag.rec{border-color:rgba(255,59,59,.35); color:#ffd0d0;}
     .tag.play{border-color:rgba(78,230,255,.35); color:#d6fbff;}
@@ -211,6 +195,15 @@
     .track-actions{display:flex; gap:8px; margin-top:12px; justify-content:space-between;}
     .track-actions .btn{padding:9px 10px; border-radius:12px; flex:1; justify-content:center;}
 
+    .track-settings{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+      padding:10px; border-radius:14px; border:1px solid var(--stroke2);
+      background: rgba(0,0,0,.18);
+    }
+    .track-settings .pill{padding:6px 10px}
+    .track-settings .pill select{padding:6px 8px}
+    .track-settings .pill span{font-size:12px; color:var(--muted);}
+
     .footer-note{width:min(1100px, 94vw); padding:0 10px 26px; color:var(--muted); font-size:13px; line-height:1.4;}
     code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px solid var(--stroke2);}
   </style>
@@ -234,7 +227,6 @@
     </div>
   </header>
 
-  <!-- Metronome / Grid -->
   <div class="metro-wrap">
     <div class="metro">
       <div class="metro-left">
@@ -266,35 +258,25 @@
             <span class="led bar" id="barLed"></span>
           </div>
         </div>
-
-        <div class="metro-group">
-          <label>Count-in (misure)</label>
-          <select id="countInBars">
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="4" selected>4</option>
-            <option value="8">8</option>
-          </select>
-          <div class="countin" id="countInBox">—</div>
-        </div>
       </div>
 
       <div class="metro-right">
         <div class="metro-group">
-          <label>Lunghezza REC (misure)</label>
-          <select id="recBars">
-            <option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option>
+          <label>Sync start</label>
+          <select id="syncMode">
+            <option value="on" selected>ON</option>
+            <option value="off">OFF</option>
           </select>
         </div>
 
         <div class="metro-group">
-          <label>Quantizzazione</label>
-          <select id="quantMode" title="Come determinare la durata del loop registrato">
-            <option value="fixed" selected>Fissa (REC bars)</option>
-            <option value="ceilbars">Arrotonda su misura</option>
-          </select>
-          <label>Extra (1/4)</label>
+          <label>Anticipo REC</label>
+          <input id="leadMs" type="number" min="0" max="2000" step="10" value="880" />
+          <label style="min-width:68px">ms</label>
+        </div>
+
+        <div class="metro-group">
+          <label>Extra fine (1/4)</label>
           <select id="extraBeats">
             <option value="0">0</option>
             <option value="1">1</option>
@@ -303,15 +285,6 @@
             <option value="4">4</option>
           </select>
         </div>
-
-        <div class="metro-group">
-          <label>Sync start</label>
-          <select id="syncMode" title="Allinea start/loop alla griglia metronomo">
-            <option value="on" selected>ON</option>
-            <option value="off">OFF</option>
-          </select>
-          <span style="color:var(--muted); font-size:12px;">(play/loop precisi)</span>
-        </div>
       </div>
     </div>
   </div>
@@ -319,7 +292,7 @@
   <div class="statusbar">
     <div class="badge"><span class="dot" id="dotAudio"></span> AudioContext</div>
     <div class="badge"><span class="dot" id="dotInput"></span> Ingresso</div>
-    <div class="badge">Master: <b id="masterBars">—</b> misure • <b id="masterLen">—</b></div>
+    <div class="badge">Beat: <b id="beatMs">—</b> ms • Bar: <b id="barMs">—</b> ms</div>
     <div class="badge">SampleRate: <b id="sr">—</b></div>
     <div class="badge">Codec REC: <b id="codec">—</b></div>
   </div>
@@ -328,10 +301,9 @@
 
   <div class="footer-note">
     <ul>
-      <li>Apri da <code>https://</code> o <code>http://localhost</code>. Evita <code>file://</code>.</li>
-      <li>Tap su una traccia vuota: avvia count-in (se impostato) → registra automaticamente per la durata scelta.</li>
-      <li>Fine registrazione: la traccia va in PLAY automaticamente. Tap: STOP/PLAY. Pressione lunga (&gt;3s): clear.</li>
-      <li>La prima traccia imposta la lunghezza master (misure). Le successive vengono forzate a quella durata.</li>
+      <li>Il tempo (BPM + misura) definisce la <b>durata in millisecondi</b> delle tracce: ogni traccia usa la propria lunghezza in <b>misure</b> e va in loop precisa.</li>
+      <li>Se una traccia è 16 misure e un’altra 2 misure, suonano insieme: quella da 2 continua a ripetersi dentro la più lunga.</li>
+      <li>Anticipo REC: registra un po’ prima e poi <b>taglia</b> per allineare la traccia alla griglia (default 880ms).</li>
     </ul>
   </div>
 
@@ -339,18 +311,12 @@
 (() => {
   const TRACKS = 8;
 
-  // Audio
   let audioCtx = null;
   let inputStream = null;
   let masterGain = null;
 
-  // Master loop
-  let masterLoopSeconds = null;
-  let masterBars = null;
-
   // Grid transport
-  let gridStartTime = null; // AudioContext time of BAR 0 BEAT 0
-  let transportArmed = false;
+  let gridStartTime = null;
 
   // Metronome (visual, mute)
   let metroOn = false;
@@ -358,17 +324,11 @@
   let metroBeatIndex = 0;
   let nextBeatAtMs = 0;
 
-  // Count-in state
-  let countInActive = false;
-  let countInTimer = null;
-  let countInBeatGlobal = 0;
-  let countInTrackRef = null;
+  // Per-track countdown + schedule
+  const countdowns = new Map(); // trackIndex -> {active, timer, beatGlobal, barsToCount, beatsPerBar, totalBeats, wasMetroOn}
+  const schedules = new Map();  // trackIndex -> {startTimeout, stopTimeout}
 
-  // Scheduled record timer
-  let recordStartTimeout = null;
-  let recordStopTimeout = null;
-
-  const grid = document.getElementById("grid");
+  const gridEl = document.getElementById("grid");
   const btnInit = document.getElementById("btnInit");
   const btnPlayAll = document.getElementById("btnPlayAll");
   const btnStopAll = document.getElementById("btnStopAll");
@@ -377,31 +337,36 @@
 
   const dotAudio = document.getElementById("dotAudio");
   const dotInput = document.getElementById("dotInput");
-  const masterLenEl = document.getElementById("masterLen");
-  const masterBarsEl = document.getElementById("masterBars");
   const srEl = document.getElementById("sr");
   const codecEl = document.getElementById("codec");
+  const beatMsEl = document.getElementById("beatMs");
+  const barMsEl = document.getElementById("barMs");
 
-  // Metronome / grid UI
   const btnMetro = document.getElementById("btnMetro");
   const bpm = document.getElementById("bpm");
   const bpmVal = document.getElementById("bpmVal");
   const tsig = document.getElementById("tsig");
   const beatLeds = document.getElementById("beatLeds");
   const barLed = document.getElementById("barLed");
-  const countInBox = document.getElementById("countInBox");
 
-  const countInBarsSel = document.getElementById("countInBars");
-  const recBarsSel = document.getElementById("recBars");
-  const quantModeSel = document.getElementById("quantMode");
-  const extraBeatsSel = document.getElementById("extraBeats");
   const syncModeSel = document.getElementById("syncMode");
+  const leadMsEl = document.getElementById("leadMs");
+  const extraBeatsSel = document.getElementById("extraBeats");
 
   const tracks = [];
 
-  function fmtSec(s){
-    if (s == null || !isFinite(s)) return "—";
-    return (s < 10 ? s.toFixed(2) : s.toFixed(1)) + "s";
+  function syncOn(){ return syncModeSel.value === "on"; }
+  function getLeadSeconds(){ return Math.max(0, parseFloat(leadMsEl.value || "0") / 1000); }
+  function getExtraBeats(){ return parseInt(extraBeatsSel.value, 10); }
+
+  function getBpm(){ return parseInt(bpm.value, 10); }
+  function getNumerator(){ return parseInt(tsig.value, 10); }
+  function beatSeconds(){ return 60 / getBpm(); }
+  function barSeconds(){ return getNumerator() * beatSeconds(); }
+
+  function updateTimingBadges(){
+    beatMsEl.textContent = String(Math.round(beatSeconds()*1000));
+    barMsEl.textContent = String(Math.round(barSeconds()*1000));
   }
 
   function setDots(){
@@ -409,20 +374,13 @@
     dotInput.classList.toggle("on", !!inputStream);
   }
 
-  function setMasterLoop(seconds, bars){
-    masterLoopSeconds = seconds;
-    masterBars = bars;
-    masterLenEl.textContent = fmtSec(masterLoopSeconds);
-    masterBarsEl.textContent = String(masterBars ?? "—");
-  }
-
   function updateGlobalButtons(){
     const anyHasBuffer = tracks.some(t => !!t.buffer);
     const anyPlaying = tracks.some(t => t.isPlaying);
-    const anyRecording = tracks.some(t => t.isRecording || t.isArmedRecord);
+    const anyBusy = tracks.some(t => t.isRecording || t.isArmedRecord || t.isCountingIn);
 
     btnPlayAll.disabled = !audioCtx || !anyHasBuffer;
-    btnStopAll.disabled = !audioCtx || (!anyPlaying && !anyRecording && !countInActive);
+    btnStopAll.disabled = !audioCtx || (!anyPlaying && !anyBusy);
     btnClearAll.disabled = !audioCtx || !anyHasBuffer;
   }
 
@@ -440,67 +398,19 @@
     return '';
   }
 
-  // Timing
-  function getBpm(){ return parseInt(bpm.value, 10); }
-  function getNumerator(){ return parseInt(tsig.value, 10); }
-  function beatSeconds(){ return 60 / getBpm(); }                 // quarter note
-  function barSeconds(){ return getNumerator() * beatSeconds(); } // N/4
-  function getCountInBars(){ return parseInt(countInBarsSel.value, 10); }
-  function getRecBars(){ return parseInt(recBarsSel.value, 10); }
-  function getExtraBeats(){ return parseInt(extraBeatsSel.value, 10); }
-  function getQuantMode(){ return quantModeSel.value; } // fixed or ceilbars
-  function syncOn(){ return syncModeSel.value === "on"; }
-
-  // Quantization: determine target length for a recording
-  function computeTargetLengthSeconds(rawSeconds){
-    const extra = getExtraBeats() * beatSeconds();
-    const mode = getQuantMode();
-
-    if (mode === "fixed"){
-      // fixed bars (global rec bars) + extra beats
-      const bars = (masterBars != null) ? masterBars : getRecBars();
-      return bars * barSeconds() + extra;
-    }
-
-    // ceil to next full bar after (raw + extra)
-    const target = rawSeconds + extra;
-    const bar = barSeconds();
-    const bars = Math.max(1, Math.ceil(target / bar));
-    // If master exists, force to master length (strong sync)
-    if (masterLoopSeconds != null) return masterLoopSeconds;
-    return bars * bar;
-  }
-
-  // Transport alignment: define a gridStartTime and schedule to next bar boundary
   function ensureGridStartArmed(){
     if (!audioCtx) return;
     if (gridStartTime != null) return;
-
-    // Put BAR0 slightly in the future so we can schedule start precisely
-    const now = audioCtx.currentTime;
-    const lead = 0.35; // seconds
-    gridStartTime = now + lead;
-    transportArmed = true;
+    gridStartTime = audioCtx.currentTime + 0.40;
   }
 
   function nextBarTime(fromTime){
     if (!syncOn() || gridStartTime == null) return fromTime;
-
     const bar = barSeconds();
     const t = Math.max(fromTime, audioCtx.currentTime);
     const rel = t - gridStartTime;
     const barsPassed = Math.ceil(rel / bar);
     return gridStartTime + barsPassed * bar;
-  }
-
-  function nextBeatTime(fromTime){
-    if (!syncOn() || gridStartTime == null) return fromTime;
-
-    const beat = beatSeconds();
-    const t = Math.max(fromTime, audioCtx.currentTime);
-    const rel = t - gridStartTime;
-    const beatsPassed = Math.ceil(rel / beat);
-    return gridStartTime + beatsPassed * beat;
   }
 
   // LEDs
@@ -557,42 +467,6 @@
     tick();
   }
 
-  // Count-in UI
-  function setCountInUI(active, txt){
-    countInBox.textContent = txt ?? "—";
-    countInBox.classList.toggle("active", !!active);
-  }
-
-  function clearScheduledRecordTimers(){
-    if (recordStartTimeout) { clearTimeout(recordStartTimeout); recordStartTimeout = null; }
-    if (recordStopTimeout) { clearTimeout(recordStopTimeout); recordStopTimeout = null; }
-  }
-
-  function cancelCountIn(){
-    if (!countInActive) return;
-    countInActive = false;
-    if (countInTimer) clearTimeout(countInTimer);
-    countInTimer = null;
-
-    const t = countInTrackRef;
-    countInTrackRef = null;
-
-    setCountInUI(false, "—");
-    if (t){
-      t.isCountingIn = false;
-      t.isArmedRecord = false;
-      updateTrackUI(t);
-    }
-    updateGlobalButtons();
-  }
-
-  function stopAllInput(){
-    if (inputStream){
-      for (const tr of inputStream.getTracks()) tr.stop();
-      inputStream = null;
-    }
-  }
-
   // Input
   async function getInputStream(){
     const mode = sourceSelect.value;
@@ -603,6 +477,13 @@
       });
     }
     return await navigator.mediaDevices.getDisplayMedia({ audio:true, video:true });
+  }
+
+  function stopAllInput(){
+    if (inputStream){
+      for (const tr of inputStream.getTracks()) tr.stop();
+      inputStream = null;
+    }
   }
 
   // Tracks
@@ -619,6 +500,14 @@
       isPlaying: false,
       isCountingIn: false,
       isArmedRecord: false,
+
+      // config
+      bars: 8,
+      countInBars: 4,
+
+      // planned alignment
+      plannedLeadSec: 0,
+      plannedLenSec: 0,
 
       loopCount: 0,
       loopTimer: null,
@@ -663,7 +552,6 @@
     updateGlobalButtons();
   }
 
-  // Start playback aligned to grid start (next bar) if sync ON
   function startPlayback(t){
     if (!audioCtx || !t.buffer) return;
 
@@ -691,34 +579,106 @@
     updateGlobalButtons();
   }
 
-  function clearTrack(t){
-    if (t.isCountingIn) cancelCountIn();
-    if (t.isArmedRecord) { t.isArmedRecord = false; clearScheduledRecordTimers(); }
-    if (t.isRecording) stopRecording(t, { autoPlay:false });
-    stopPlayback(t);
-    t.buffer = null;
+  // Countdown & schedule
+  function cancelCountdown(t){
+    const st = countdowns.get(t.index);
+    if (!st) return;
+    st.active = false;
+    if (st.timer) clearTimeout(st.timer);
+    countdowns.delete(t.index);
+
+    t.isCountingIn = false;
+    t.ui.countBadge.style.display = "none";
     updateTrackUI(t);
     updateGlobalButtons();
   }
 
-  function quantizeToFixedSeconds(buf, seconds){
-    const sr = buf.sampleRate;
-    const targetFrames = Math.max(1, Math.round(seconds * sr));
-    const chs = buf.numberOfChannels;
-    const out = audioCtx.createBuffer(chs, targetFrames, sr);
+  function cancelSchedule(t){
+    const sch = schedules.get(t.index);
+    if (!sch) return;
+    if (sch.startTimeout) clearTimeout(sch.startTimeout);
+    if (sch.stopTimeout) clearTimeout(sch.stopTimeout);
+    schedules.delete(t.index);
 
-    for (let ch=0; ch<chs; ch++){
-      const inData = buf.getChannelData(ch);
-      const outData = out.getChannelData(ch);
-      if (inData.length >= targetFrames){
-        outData.set(inData.subarray(0, targetFrames));
-      } else {
-        outData.set(inData);
-      }
-    }
-    return out;
+    t.isArmedRecord = false;
+    updateTrackUI(t);
+    updateGlobalButtons();
   }
 
+  function clearTrack(t){
+    cancelCountdown(t);
+    cancelSchedule(t);
+    if (t.isRecording) stopRecording(t, { autoPlay:false });
+
+    stopPlayback(t);
+    t.buffer = null;
+
+    updateTrackUI(t);
+    updateGlobalButtons();
+  }
+
+  function startCountdownThenRecord(t){
+    cancelCountdown(t);
+
+    const barsToCount = Math.max(0, parseInt(t.countInBars, 10) || 0);
+    if (barsToCount === 0){
+      armRecordWithGrid(t);
+      return;
+    }
+
+    const wasMetroOn = metroOn;
+    if (!metroOn) startMetronome();
+
+    t.isCountingIn = true;
+    updateTrackUI(t);
+    updateGlobalButtons();
+
+    const state = {
+      active: true,
+      timer: null,
+      beatGlobal: 0,
+      barsToCount,
+      beatsPerBar: getNumerator(),
+      totalBeats: barsToCount * getNumerator(),
+      wasMetroOn
+    };
+    countdowns.set(t.index, state);
+
+    const beatMs = beatSeconds() * 1000;
+
+    const step = () => {
+      const st = countdowns.get(t.index);
+      if (!st || !st.active) return;
+
+      const barIdx = Math.floor(st.beatGlobal / st.beatsPerBar);
+      const beatInBar = st.beatGlobal % st.beatsPerBar;
+
+      t.ui.countBadge.textContent = `COUNT ${barIdx}:${beatInBar}`;
+      t.ui.countBadge.style.display = "inline-flex";
+
+      flashBeat(beatInBar);
+
+      st.beatGlobal++;
+
+      if (st.beatGlobal >= st.totalBeats){
+        t.ui.countBadge.style.display = "none";
+        t.isCountingIn = false;
+        countdowns.delete(t.index);
+        updateTrackUI(t);
+        updateGlobalButtons();
+
+        if (!st.wasMetroOn) stopMetronome();
+        armRecordWithGrid(t);
+        return;
+      }
+
+      st.timer = setTimeout(step, beatMs);
+    };
+
+    step();
+  }
+
+  // Buffer helpers
   async function blobToAudioBuffer(blob){
     const arrayBuf = await blob.arrayBuffer();
     return await audioCtx.decodeAudioData(arrayBuf);
@@ -733,6 +693,24 @@
       for (let i=0; i<d.length; i++) out[i] += d[i] / decoded.numberOfChannels;
     }
     return mono;
+  }
+
+  function sliceBuffer(buf, startSec, lengthSec){
+    const sr = buf.sampleRate;
+    const start = Math.max(0, Math.round(startSec * sr));
+    const len = Math.max(1, Math.round(lengthSec * sr));
+    const end = Math.min(buf.length, start + len);
+
+    const chs = buf.numberOfChannels;
+    const out = audioCtx.createBuffer(chs, len, sr);
+    for (let ch=0; ch<chs; ch++){
+      const inData = buf.getChannelData(ch);
+      const outData = out.getChannelData(ch);
+      const segment = inData.subarray(start, end);
+      outData.set(segment);
+      // remaining stays silence
+    }
+    return out;
   }
 
   function startRecordingNow(t){
@@ -793,26 +771,15 @@
         const decoded = await blobToAudioBuffer(blob);
         const mono = mixToMonoIfNeeded(decoded);
 
-        // Decide target length
-        let targetLen = computeTargetLengthSeconds(mono.duration);
+        const loopLen = t.plannedLenSec || (Math.max(1, t.bars) * barSeconds());
+        const extraEnd = getExtraBeats() * beatSeconds();
+        const trimStart = Math.max(0, t.plannedLeadSec || 0);
 
-        // If master exists, force exact master length (tight sync)
-        if (masterLoopSeconds != null) targetLen = masterLoopSeconds;
+        const trimmed = sliceBuffer(mono, trimStart, loopLen + extraEnd);
+        const fixed = sliceBuffer(trimmed, 0, loopLen);
 
-        let buf = quantizeToFixedSeconds(mono, targetLen);
+        t.buffer = fixed;
 
-        // If no master, set master from current settings (bars)
-        if (masterLoopSeconds == null){
-          const bars = getRecBars();
-          // In fixed mode, master bars is recBars; in ceil mode, infer from seconds
-          const inferredBars = Math.max(1, Math.round(targetLen / barSeconds()));
-          const masterBarsChosen = (getQuantMode() === "fixed") ? bars : inferredBars;
-          setMasterLoop(targetLen, masterBarsChosen);
-        }
-
-        t.buffer = buf;
-
-        // Auto-play aligned to grid
         if (autoPlay) startPlayback(t);
       } catch (e){
         console.error(e);
@@ -821,6 +788,9 @@
         t.isRecording = false;
         t.recorder = null;
         t.recChunks = [];
+        t.plannedLeadSec = 0;
+        t.plannedLenSec = 0;
+
         updateTrackUI(t);
         updateGlobalButtons();
       }
@@ -831,143 +801,73 @@
     updateGlobalButtons();
   }
 
-  // Schedule recording: align to next bar, record for master bars (or recBars if no master)
   function armRecordWithGrid(t){
     if (!audioCtx) return;
 
-    // Determine record bars: if master exists, lock to master
-    const bars = (masterBars != null) ? masterBars : getRecBars();
-    const recLen = bars * barSeconds();
-
-    // Ensure transport start
     if (syncOn()) ensureGridStartArmed();
 
-    // Compute start time (next bar)
-    const startAt = syncOn() ? nextBarTime(audioCtx.currentTime + 0.05) : (audioCtx.currentTime + 0.05);
-    const stopAt = startAt + recLen;
+    const bars = Math.max(1, parseInt(t.bars, 10) || 1);
+    const loopLen = bars * barSeconds();
 
-    // Mark armed
+    const desiredStartAt = syncOn()
+      ? nextBarTime(audioCtx.currentTime + 0.05)
+      : (audioCtx.currentTime + 0.05);
+
+    const lead = getLeadSeconds();
+    const recorderStartAt = Math.max(audioCtx.currentTime + 0.02, desiredStartAt - lead);
+    const effectiveLead = Math.max(0, desiredStartAt - recorderStartAt);
+
+    const extraEnd = getExtraBeats() * beatSeconds();
+    const recorderStopAt = desiredStartAt + loopLen + extraEnd;
+
     t.isArmedRecord = true;
+    t.plannedLeadSec = effectiveLead;
+    t.plannedLenSec = loopLen;
+
     updateTrackUI(t);
     updateGlobalButtons();
 
-    // Use setTimeout to start/stop MediaRecorder close to desired times
-    // Note: MediaRecorder isn't sample-accurate; we compensate by forcing buffer to exact loop length.
     const now = audioCtx.currentTime;
-    const startDelayMs = Math.max(0, (startAt - now) * 1000);
-    const stopDelayMs  = Math.max(0, (stopAt  - now) * 1000);
+    const startDelayMs = Math.max(0, (recorderStartAt - now) * 1000);
+    const stopDelayMs  = Math.max(0, (recorderStopAt  - now) * 1000);
 
-    clearScheduledRecordTimers();
+    cancelSchedule(t);
 
-    recordStartTimeout = setTimeout(() => {
-      startRecordingNow(t);
-    }, startDelayMs);
+    const startTimeout = setTimeout(() => startRecordingNow(t), startDelayMs);
+    const stopTimeout  = setTimeout(() => stopRecording(t, { autoPlay:true }), stopDelayMs);
 
-    recordStopTimeout = setTimeout(() => {
-      stopRecording(t, { autoPlay:true });
-    }, stopDelayMs);
+    schedules.set(t.index, { startTimeout, stopTimeout });
 
-    // UI helper
-    setCountInUI(true, `REC ARMED • start fra ${(startDelayMs/1000).toFixed(2)}s • durata ${bars} bars`);
+    t.ui.countBadge.textContent = `ARM • ${bars} bars`;
+    t.ui.countBadge.style.display = "inline-flex";
+    setTimeout(() => {
+      if (!t.isCountingIn && !t.isRecording) t.ui.countBadge.style.display = "none";
+    }, 1200);
   }
 
-  // Count-in (bars) then arm record
-  function startCountInThenArmRecord(t){
-    if (countInActive) cancelCountIn();
-    countInActive = true;
-    countInTrackRef = t;
-    countInBeatGlobal = 0;
-
-    t.isCountingIn = true;
-    updateTrackUI(t);
-    updateGlobalButtons();
-
-    const barsToCount = getCountInBars();
-    if (barsToCount <= 0){
-      // No count-in -> arm immediately
-      countInActive = false;
-      t.isCountingIn = false;
-      setCountInUI(false, "—");
-      updateTrackUI(t);
-      armRecordWithGrid(t);
-      return;
-    }
-
-    const wasMetroOn = metroOn;
-    if (!metroOn) startMetronome();
-
-    const beatMs = beatSeconds() * 1000;
-    const beatsPerBar = getNumerator();
-    const totalBeats = barsToCount * beatsPerBar;
-
-    const step = () => {
-      if (!countInActive) return;
-
-      const barIdx = Math.floor(countInBeatGlobal / beatsPerBar);
-      const beatInBar = countInBeatGlobal % beatsPerBar;
-
-      setCountInUI(true, `COUNT BAR ${barIdx} BEAT ${beatInBar}`);
-      flashBeat(beatInBar);
-
-      countInBeatGlobal++;
-
-      if (countInBeatGlobal >= totalBeats){
-        setCountInUI(false, "—");
-        countInActive = false;
-
-        t.isCountingIn = false;
-        updateTrackUI(t);
-        updateGlobalButtons();
-
-        if (!wasMetroOn) stopMetronome();
-
-        armRecordWithGrid(t);
-        return;
-      }
-
-      countInTimer = setTimeout(step, beatMs);
-    };
-
-    step();
-  }
-
-  // Main tap:
-  // - If counting-in: cancel
-  // - If armed record: cancel arming (safe)
-  // - If empty: start count-in/arm record
-  // - If has buffer: toggle play/stop (aligned)
+  // Main tap
   async function onMainTap(t){
     if (!audioCtx) return alert("Prima clicca: Attiva Audio");
     try { await audioCtx.resume(); } catch {}
 
     if (t.isCountingIn){
-      cancelCountIn();
+      cancelCountdown(t);
       return;
     }
     if (t.isArmedRecord){
-      t.isArmedRecord = false;
-      clearScheduledRecordTimers();
-      setCountInUI(false, "—");
-      updateTrackUI(t);
-      updateGlobalButtons();
+      cancelSchedule(t);
       return;
     }
-    if (countInActive) return;
-
     if (!t.buffer && !t.isRecording){
-      // First action on first track initializes grid transport
       if (syncOn()) ensureGridStartArmed();
-      startCountInThenArmRecord(t);
+      startCountdownThenRecord(t);
       return;
     }
-
     if (t.isRecording){
-      // Manual stop allowed (will still quantize to master/fixed length)
       stopRecording(t, { autoPlay:true });
       return;
     }
 
-    // has buffer
     if (t.isPlaying) stopPlayback(t);
     else startPlayback(t);
   }
@@ -979,28 +879,28 @@
       tag.textContent = "COUNT";
       tag.className = "tag count";
       dot.className = "dot rec";
-      label.textContent = "count-in…";
+      label.textContent = `count-in (${t.countInBars} bars)…`;
     } else if (t.isArmedRecord){
       tag.textContent = "ARM";
       tag.className = "tag rec";
       dot.className = "dot rec";
-      label.textContent = "armed…";
+      label.textContent = `armed • rec ${t.bars} bars`;
     } else if (t.isRecording){
       tag.textContent = "REC";
       tag.className = "tag rec";
       dot.className = "dot rec";
-      label.textContent = "registrazione…";
+      label.textContent = `registrazione… (${t.bars} bars)`;
     } else if (t.isPlaying){
       tag.textContent = "PLAY";
       tag.className = "tag play";
       dot.className = "dot play";
       const lc = t.loopCount ? (" • x" + t.loopCount) : "";
-      label.textContent = "in loop" + lc;
+      label.textContent = `in loop (${t.bars} bars)` + lc;
     } else {
       tag.textContent = "STOP";
       tag.className = "tag stop";
       dot.className = "dot";
-      label.textContent = t.buffer ? ("pronto • " + fmtSec(t.buffer.duration)) : "vuoto";
+      label.textContent = t.buffer ? (`pronto • ${t.bars} bars • ${Math.round(t.buffer.duration*1000)}ms`) : `vuoto • ${t.bars} bars`;
     }
 
     const svg = btnMain.querySelector("svg");
@@ -1034,7 +934,6 @@
     volpct.textContent = Math.round(v*100) + "%";
   }
 
-  // Long press (>3s) clears track (with confirm)
   function attachLongPress(t, btnMain){
     const start = (ev) => {
       ev.preventDefault();
@@ -1076,6 +975,7 @@
         <div class="track-title">
           <div class="n">${t.index+1}</div>
           <div class="label" id="label">vuoto</div>
+          <span class="tag count" id="countBadge" style="display:none;"></span>
         </div>
         <div class="mini">
           <span class="dot" id="dot"></span>
@@ -1103,6 +1003,27 @@
         </div>
       </div>
 
+      <div class="track-settings">
+        <div class="pill">
+          <span>REC</span>
+          <select id="barsSel">
+            <option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option>
+          </select>
+          <span>bars</span>
+        </div>
+        <div class="pill">
+          <span>COUNT</span>
+          <select id="countSel">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="4" selected>4</option>
+            <option value="8">8</option>
+          </select>
+          <span>bars</span>
+        </div>
+      </div>
+
       <div class="track-actions">
         <button class="btn" id="muteBtn">Mute</button>
         <button class="btn" id="clearBtn">Clear</button>
@@ -1117,8 +1038,21 @@
     const volpct = el.querySelector("#volpct");
     const muteBtn = el.querySelector("#muteBtn");
     const clearBtn = el.querySelector("#clearBtn");
+    const barsSel = el.querySelector("#barsSel");
+    const countSel = el.querySelector("#countSel");
+    const countBadge = el.querySelector("#countBadge");
 
-    t.ui = { el, btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn };
+    t.ui = { el, btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn, barsSel, countSel, countBadge };
+
+    barsSel.addEventListener("change", () => {
+      t.bars = parseInt(barsSel.value, 10);
+      updateTrackUI(t);
+      updateGlobalButtons();
+    });
+    countSel.addEventListener("change", () => {
+      t.countInBars = parseInt(countSel.value, 10);
+      updateTrackUI(t);
+    });
 
     attachLongPress(t, btnMain);
 
@@ -1157,12 +1091,12 @@
   }
 
   function buildUI(){
-    grid.innerHTML = "";
+    gridEl.innerHTML = "";
     tracks.length = 0;
     for (let i=0; i<TRACKS; i++){
       const t = createTrack(i);
       tracks.push(t);
-      grid.appendChild(buildTrackCard(t));
+      gridEl.appendChild(buildTrackCard(t));
     }
     updateGlobalButtons();
   }
@@ -1213,30 +1147,20 @@
   });
 
   btnStopAll.addEventListener("click", () => {
-    if (countInActive) cancelCountIn();
-    clearScheduledRecordTimers();
-    setCountInUI(false, "—");
     for (const t of tracks){
-      if (t.isArmedRecord) t.isArmedRecord = false;
+      cancelCountdown(t);
+      cancelSchedule(t);
       if (t.isRecording) stopRecording(t, { autoPlay:false });
       if (t.isPlaying) stopPlayback(t);
-      updateTrackUI(t);
+      t.ui.countBadge.style.display = "none";
     }
     updateGlobalButtons();
   });
 
   btnClearAll.addEventListener("click", () => {
     if (!confirm("Cancellare tutte le tracce?")) return;
-    if (countInActive) cancelCountIn();
-    clearScheduledRecordTimers();
-    setCountInUI(false, "—");
     for (const t of tracks) clearTrack(t);
-    masterLoopSeconds = null;
-    masterBars = null;
     gridStartTime = null;
-    transportArmed = false;
-    masterLenEl.textContent = "—";
-    masterBarsEl.textContent = "—";
     updateGlobalButtons();
   });
 
@@ -1246,7 +1170,6 @@
     }
   });
 
-  // Metronome controls
   btnMetro.addEventListener("click", () => {
     if (metroOn) stopMetronome();
     else startMetronome();
@@ -1254,57 +1177,40 @@
 
   function onTimingChange(){
     bpmVal.textContent = bpm.value;
+    updateTimingBadges();
+    buildBeatLeds();
 
-    // Count-in stability: cancel (user can restart)
-    if (countInActive) cancelCountIn();
-    clearScheduledRecordTimers();
-    setCountInUI(false, "—");
+    for (const t of tracks){
+      cancelCountdown(t);
+      cancelSchedule(t);
+      t.ui.countBadge.style.display = "none";
+      updateTrackUI(t);
+    }
+    updateGlobalButtons();
 
-    // Restart metronome for clean LED tempo
     if (metroOn){
       stopMetronome();
       startMetronome();
     }
-
-    // If master already exists, changing BPM or time signature changes the meaning of "bars".
-    // Keep audio master length as-is (seconds), but update displayed master bars as "locked".
-    if (masterLoopSeconds != null){
-      // show lock message in countInBox briefly
-      setCountInUI(true, "MASTER locked (durata in secondi) • clear all per resettare");
-      setTimeout(() => setCountInUI(false, "—"), 1400);
-    }
-
-    // Rebuild LEDs when time signature changes
-    buildBeatLeds();
   }
 
   bpm.addEventListener("input", onTimingChange);
   tsig.addEventListener("change", onTimingChange);
-
-  // Param changes: just cancel count-in / arming for safety
-  [countInBarsSel, recBarsSel, quantModeSel, extraBeatsSel, syncModeSel].forEach(el => {
-    el.addEventListener("change", () => {
-      if (countInActive) cancelCountIn();
-      clearScheduledRecordTimers();
-      setCountInUI(false, "—");
-      for (const t of tracks){
-        if (t.isArmedRecord){
-          t.isArmedRecord = false;
-          updateTrackUI(t);
-        }
-      }
-      updateGlobalButtons();
-    });
-  });
+  [syncModeSel, leadMsEl, extraBeatsSel].forEach(el => el.addEventListener("change", () => {
+    for (const t of tracks){
+      cancelSchedule(t);
+      t.ui.countBadge.style.display = "none";
+      updateTrackUI(t);
+    }
+    updateGlobalButtons();
+  }));
 
   // Init UI
   buildUI();
   buildBeatLeds();
   bpmVal.textContent = bpm.value;
-  masterLenEl.textContent = "—";
-  masterBarsEl.textContent = "—";
-  setCountInUI(false, "—");
-
+  updateTimingBadges();
+  srEl.textContent = "—";
   setInterval(() => setDots(), 500);
 })();
 </script>
