@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>maracanaudio – Accordatore Pro</title>
+<title>maracanaudio – Accordatore</title>
 
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
@@ -53,18 +53,6 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
 .refRow input{flex:1;padding:12px 12px;border-radius:14px;border:2px solid #ddd;font-size:16px;font-weight:900;outline:none;}
 .hint{margin-top:10px;font-size:13px;font-weight:800;color:#555;}
 
-.sensitivity-badge {
-  display: inline-block;
-  background: rgba(0,255,0,0.15);
-  border-radius: 12px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 900;
-  color: #aaffaa;
-  margin-left: 6px;
-  border: 1px solid rgba(0,255,0,0.25);
-}
-
 @media (orientation:landscape) and (max-height:520px){
   .topRow{display:none;}
   .readout{gap:2px;}
@@ -105,9 +93,9 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
 
 <div class="overlay" id="startOverlay">
   <div class="overlayCard">
-    <h2>Accordatore <span class="sensitivity-badge">SENSIBILITÀ OTTIMIZZATA</span></h2>
+    <h2>Accordatore</h2>
     <p>
-      Tocca “AVVIA” per attivare il microfono.<br/>
+      Tocca "AVVIA" per attivare il microfono.<br/>
       LA di riferimento: <b id="overlayRef">440.0 Hz</b>
     </p>
     <div class="overlayRow">
@@ -135,50 +123,42 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
 <script>
 "use strict";
 
+// ─── ERRORE UI ───────────────────────────────────────────────────────────────
+function showErr(msg){ overlayErr.style.display="block"; overlayErr.textContent=msg; }
+function hideErr(){ overlayErr.style.display="none"; overlayErr.textContent=""; }
 
-function showErr(msg){
-  overlayErr.style.display = "block";
-  overlayErr.textContent = msg;
-}
-function hideErr(){
-  overlayErr.style.display = "none";
-  overlayErr.textContent = "";
-}
-
-
+// ─── STATO ───────────────────────────────────────────────────────────────────
 let audioContext, analyser, micSource, streamRef, rafId;
 let isRunning = false;
 let referenceA4 = 440.0;
 
-
-const refVal = document.getElementById('refVal');
-const overlayRef = document.getElementById('overlayRef');
-const noteNameEl = document.getElementById('noteName');
-const freqNowEl = document.getElementById('freqNow');
-const deltaNowEl = document.getElementById('deltaNow');
-const statusEl = document.getElementById('status');
-const needleEl = document.getElementById('needle');
-const scaleEl = document.getElementById('scale');
-const stopBtn = document.getElementById('stopBtn');
-
-const startOverlay = document.getElementById('startOverlay');
-const startBtn = document.getElementById('startBtn');
+// ─── DOM ─────────────────────────────────────────────────────────────────────
+const refVal        = document.getElementById('refVal');
+const overlayRef    = document.getElementById('overlayRef');
+const noteNameEl    = document.getElementById('noteName');
+const freqNowEl     = document.getElementById('freqNow');
+const deltaNowEl    = document.getElementById('deltaNow');
+const statusEl      = document.getElementById('status');
+const needleEl      = document.getElementById('needle');
+const scaleEl       = document.getElementById('scale');
+const stopBtn       = document.getElementById('stopBtn');
+const startOverlay  = document.getElementById('startOverlay');
+const startBtn      = document.getElementById('startBtn');
 const overlayRefBtn = document.getElementById('overlayRefBtn');
-const overlayErr = document.getElementById('overlayErr');
+const overlayErr    = document.getElementById('overlayErr');
+const refBtn        = document.getElementById('refBtn');
+const refModal      = document.getElementById('refModal');
+const refInput      = document.getElementById('refInput');
+const refApply      = document.getElementById('refApply');
+const refClose      = document.getElementById('refClose');
 
-const refBtn = document.getElementById('refBtn');
-const refModal = document.getElementById('refModal');
-const refInput = document.getElementById('refInput');
-const refApply = document.getElementById('refApply');
-const refClose = document.getElementById('refClose');
-
-
+// ─── NOTE ─────────────────────────────────────────────────────────────────────
 const NOTE_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const NOTE_FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
-const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
 
-function freqToMidi(f){ return 69 + 12*Math.log2(f/referenceA4); }
-function midiToFreq(m){ return referenceA4*Math.pow(2,(m-69)/12); }
+function freqToMidi(f)  { return 69 + 12*Math.log2(f/referenceA4); }
+function midiToFreq(m)  { return referenceA4*Math.pow(2,(m-69)/12); }
 function midiToName(midi, preferFlats){
   const n=Math.round(midi);
   const octave=Math.floor(n/12)-1;
@@ -189,17 +169,17 @@ function midiToName(midi, preferFlats){
 function centsDiff(freq,target){ return 1200*Math.log2(freq/target); }
 function formatNameBoth(midi){
   const s=midiToName(midi,false), f=midiToName(midi,true);
-  if (s.name!==f.name) return `${s.name}${s.octave} / ${f.name}${f.octave}`;
+  if(s.name!==f.name) return `${s.name}${s.octave} / ${f.name}${f.octave}`;
   return `${s.name}${s.octave}`;
 }
 
-
+// ─── SCALA VISIVA ──────────────────────────────────────────────────────────────
 function getZoomRange(absC){
-  if (absC>80) return 150;
-  if (absC>40) return 80;
-  if (absC>20) return 40;
-  if (absC>10) return 20;
-  if (absC>5)  return 10;
+  if(absC>80)  return 150;
+  if(absC>40)  return 80;
+  if(absC>20)  return 40;
+  if(absC>10)  return 20;
+  if(absC>5)   return 10;
   return 5;
 }
 function drawScale(range){
@@ -207,160 +187,176 @@ function drawScale(range){
   let step=10;
   if(range<=20) step=5;
   if(range<=10) step=2;
-  if(range<=5) step=1;
-
+  if(range<=5)  step=1;
   for(let c=-range;c<=range;c+=step){
     const mark=document.createElement("div");
     mark.className=(c===0)?"mark center":"mark";
     const major=(range>=80)?20:(range>=40?10:(range>=20?10:(range>=10?5:2)));
     if(c===0 || (Math.abs(c)%major===0)){
       const lab=document.createElement("span");
-      lab.className="label";
-      lab.textContent=c;
+      lab.className="label"; lab.textContent=c;
       mark.appendChild(lab);
     }
     scaleEl.appendChild(mark);
   }
 }
 
+// ─── COSTANTI DI RILEVAZIONE ──────────────────────────────────────────────────
+const FFT_SIZE = 4096;          // ↑ era 2048 — più campioni = più risoluzione temporale per note acute
+const RMS_MIN  = 0.015;
+const CONF_MIN = 0.82;          // ↑ soglia più alta per ridurre falsi positivi
+const NOTE_HYSTERESIS_CENTS = 22;
+const STABLE_FRAMES_REQUIRED = 3;
 
+// Range chitarra standard: E2(82Hz) – E5(1319Hz)
+const FREQ_MIN = 70;
+const FREQ_MAX = 1400;
+
+// ─── ALGORITMO DI PITCH ───────────────────────────────────────────────────────
+// Usa YIN semplificato + correzione d'ottava via HPS (Harmonic Product Spectrum)
+// YIN è molto più accurato dell'autocorrelazione semplice per note acute
+
+function calcRMS(buf){
+  let s=0;
+  for(let i=0;i<buf.length;i++) s+=buf[i]*buf[i];
+  return Math.sqrt(s/buf.length);
+}
+
+// Differenza quadratica media (core di YIN)
+function yinDifference(buf, W){
+  const d = new Float32Array(W);
+  d[0] = 0;
+  for(let tau=1;tau<W;tau++){
+    let s=0;
+    for(let i=0;i<W;i++){
+      const diff = buf[i] - buf[i+tau];
+      s += diff*diff;
+    }
+    d[tau] = s;
+  }
+  return d;
+}
+
+// Differenza cumulativa normalizzata
+function yinCMND(d){
+  const cmnd = new Float32Array(d.length);
+  cmnd[0] = 1;
+  let runningSum = 0;
+  for(let tau=1;tau<d.length;tau++){
+    runningSum += d[tau];
+    cmnd[tau] = (runningSum === 0) ? 0 : d[tau] * tau / runningSum;
+  }
+  return cmnd;
+}
+
+// Parabolic interpolation per sub-sample precision
+function parabolicInterp(arr, x){
+  if(x<=0 || x>=arr.length-1) return x;
+  const a=arr[x-1], b=arr[x], c=arr[x+1];
+  const denom = 2*(a - 2*b + c);
+  if(Math.abs(denom)<1e-10) return x;
+  return x + (a - c)/denom;
+}
+
+// Rilevazione pitch principale con YIN
+function detectPitchYIN(buf, sr){
+  const rms = calcRMS(buf);
+  if(rms < RMS_MIN) return {freq:-1, confidence:0, rms};
+
+  const W = Math.floor(buf.length / 2);
+  const d    = yinDifference(buf, W);
+  const cmnd = yinCMND(d);
+
+  // Calcola tau_min corrispondente a FREQ_MAX
+  // Calcola tau_max corrispondente a FREQ_MIN
+  const tauMin = Math.floor(sr / FREQ_MAX);
+  const tauMax = Math.min(W-1, Math.ceil(sr / FREQ_MIN));
+
+  const threshold = 0.10; // YIN threshold — più basso = più sensibile
+
+  // Cerca il primo minimo sotto la soglia
+  let bestTau = -1;
+  let bestVal = 1;
+
+  // Prima pass: cerca minimo sotto soglia
+  for(let tau=tauMin; tau<=tauMax; tau++){
+    if(cmnd[tau] < threshold){
+      // Verifica che sia un minimo locale
+      while(tau+1<=tauMax && cmnd[tau+1]<cmnd[tau]) tau++;
+      bestTau = tau;
+      bestVal = cmnd[tau];
+      break;
+    }
+  }
+
+  // Se non trovato sotto soglia, usa il minimo assoluto
+  if(bestTau === -1){
+    for(let tau=tauMin; tau<=tauMax; tau++){
+      if(cmnd[tau] < bestVal){ bestVal=cmnd[tau]; bestTau=tau; }
+    }
+  }
+
+  if(bestTau === -1 || bestVal > 0.35) return {freq:-1, confidence:0, rms};
+
+  // Sub-sample con interpolazione parabolica
+  const tauInterp = parabolicInterp(cmnd, bestTau);
+  const freq = sr / tauInterp;
+
+  if(freq < FREQ_MIN || freq > FREQ_MAX) return {freq:-1, confidence:0, rms};
+
+  // Confidence: più basso cmnd = più sicuro; scala invertita
+  const confidence = clamp(1 - bestVal, 0, 1) * clamp(rms/0.05, 0.1, 1);
+
+  return {freq, confidence, rms};
+}
+
+// ─── CORREZIONE OTTAVA via HPS ────────────────────────────────────────────────
+// Se la nota rilevata è troppo bassa rispetto al segnale FFT, correggi all'ottava superiore.
+// Questo risolve il problema classico di chitarra dove si rileva la fondamentale sbagliata.
+function correctOctaveHPS(detectedFreq, fftBuf, sr){
+  if(!fftBuf || fftBuf.length === 0) return detectedFreq;
+
+  // Funzione per ottenere ampiezza FFT a una certa frequenza (interpolazione lineare)
+  const getAmp = (f) => {
+    const bin = f * fftBuf.length / sr;
+    const i = Math.floor(bin);
+    if(i<0 || i>=fftBuf.length-1) return 0;
+    const frac = bin - i;
+    // fftBuf contiene dB (da getFloatFrequencyData), normalizza
+    const a = Math.pow(10, fftBuf[i]/20);
+    const b = Math.pow(10, fftBuf[i+1]/20);
+    return a*(1-frac) + b*frac;
+  };
+
+  const f1 = detectedFreq;
+  const f2 = detectedFreq * 2; // ottava sopra
+  if(f2 > FREQ_MAX) return f1;
+
+  const amp1 = getAmp(f1);
+  const amp2 = getAmp(f2);
+
+  // Se l'armonica 2x è significativamente più forte della fondamentale rilevata,
+  // è probabile che la vera fondamentale sia f2 (problema di pitch dimezzato)
+  // Per chitarra, le corde acute (B e E) spesso hanno armoniche più forti
+  if(amp2 > amp1 * 1.6){
+    // Verifica che f2 sia una nota valida di chitarra
+    if(f2 >= FREQ_MIN && f2 <= FREQ_MAX) return f2;
+  }
+
+  return f1;
+}
+
+// ─── SMOOTHING E STATO ────────────────────────────────────────────────────────
 let smoothFreq=null, lastStableMidi=null, stableFrames=0;
-const STABLE_FRAMES_REQUIRED=3; // Ridotto per maggiore reattività
-const NOTE_HYSTERESIS_CENTS=12;  // Ridotto per maggiore precisione
-const RMS_MIN=0.008; // SOGLIA MOLTO PIÙ BASSA per catturare anche suoni deboli
-const CONF_MIN=0.55; // Leggermente ridotta per maggiore sensibilità
 
-// Frequenze delle note della scala cromatica (basate su A4=440Hz)
-const CHROMATIC_FREQS = [];
-for (let midi = 21; midi <= 108; midi++) { // Da A0 a C8
-  CHROMATIC_FREQS.push(midiToFreq(midi));
+function adaptiveAlpha(freq){
+  // Per note acute (>500Hz) smoothing più veloce per non perdere stabilità
+  if(freq > 500) return 0.45;
+  if(freq > 250) return 0.32;
+  return 0.22;
 }
 
-// Funzione migliorata di autocorrelazione con filtraggio passa-banda
-function enhancedAutoCorrelate(buf, sr){
-  const SIZE = buf.length;
-  
-  // Calcola RMS con finestra mobile per ridurre il rumore
-  let rms = 0;
-  let sum = 0;
-  for(let i = 0; i < SIZE; i++) { 
-    const v = buf[i]; 
-    sum += v * v;
-  }
-  rms = Math.sqrt(sum / SIZE);
-  
-  // Soglia dinamica basata sul livello di rumore ambientale
-  if(rms < RMS_MIN) return {freq: -1, confidence: 0, rms};
-  
-  // Sottrazione della media (DC offset)
-  let mean = 0;
-  for(let i = 0; i < SIZE; i++) mean += buf[i];
-  mean /= SIZE;
-  for(let i = 0; i < SIZE; i++) buf[i] -= mean;
-  
-  // Applica una finestra di Hamming per ridurre le discontinuità
-  for(let i = 0; i < SIZE; i++) {
-    buf[i] *= 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (SIZE - 1));
-  }
-  
-  const MAX_OFFSET = Math.floor(SIZE / 2);
-  const MIN_OFFSET = Math.floor(sr / 2000); // minimo 20Hz
-  const MAX_OFFSET_LIMIT = Math.floor(sr / 40); // massimo 40Hz
-  
-  let bestOffset = -1;
-  let bestCorrelation = 0;
-  let secondBestCorr = 0;
-  let secondBestOffset = -1;
-  
-  // Cerca correlazione in range limitato per note musicali
-  for(let offset = MIN_OFFSET; offset < MAX_OFFSET_LIMIT; offset++) {
-    let correlation = 0;
-    
-    // Correlazione incrociata normalizzata
-    let sum1 = 0, sum2 = 0, sum12 = 0;
-    for(let i = 0; i < MAX_OFFSET; i++) {
-      if(i + offset < SIZE) {
-        sum12 += buf[i] * buf[i + offset];
-        sum1 += buf[i] * buf[i];
-        sum2 += buf[i + offset] * buf[i + offset];
-      }
-    }
-    
-    if (sum1 > 0 && sum2 > 0) {
-      correlation = sum12 / Math.sqrt(sum1 * sum2);
-    }
-    
-    // Pesa la correlazione per favorire offset vicini a note cromatiche
-    if(correlation > bestCorrelation && correlation > 0.2) {
-      const freq = sr / offset;
-      
-      // Verifica se la frequenza è vicina a una nota cromatica
-      let minDistance = Infinity;
-      for(let noteFreq of CHROMATIC_FREQS) {
-        const ratio = freq / noteFreq;
-        if (ratio > 0.8 && ratio < 1.2) {
-          const distance = Math.abs(1200 * Math.log2(ratio));
-          if (distance < minDistance) minDistance = distance;
-        }
-      }
-      
-      // Bonus per frequenze vicine a note cromatiche
-      const chromaticBonus = (minDistance < 50) ? (1 - minDistance/200) : 0.5;
-      const weightedCorr = correlation * (0.7 + 0.3 * chromaticBonus);
-      
-      if (weightedCorr > bestCorrelation) {
-        secondBestCorr = bestCorrelation;
-        secondBestOffset = bestOffset;
-        bestCorrelation = weightedCorr;
-        bestOffset = offset;
-      }
-    }
-  }
-  
-  if(bestOffset === -1 || bestCorrelation < 0.15) {
-    return {freq: -1, confidence: 0, rms};
-  }
-  
-  // Interpolazione parabolica per maggiore precisione
-  if (bestOffset > MIN_OFFSET && bestOffset < MAX_OFFSET_LIMIT - 1) {
-    const c0 = bestCorrelation;
-    const c1 = bestCorrelation; // semplificato per evitare ricalcoli
-    const c2 = bestCorrelation;
-    // Calcolo più preciso dell'offset
-    const alpha = 0.5; // fattore di smoothing
-    bestOffset = bestOffset + alpha * (secondBestOffset - bestOffset);
-  }
-  
-  const freq = sr / bestOffset;
-  const confidence = clamp(bestCorrelation * (rms / 0.03), 0, 1);
-  
-  // Validazione finale: deve essere vicino a una nota cromatica
-  let isValidNote = false;
-  let closestFreq = freq;
-  let minDist = Infinity;
-  
-  for(let noteFreq of CHROMATIC_FREQS) {
-    const ratio = freq / noteFreq;
-    if (ratio > 0.95 && ratio < 1.05) {
-      const dist = Math.abs(centsDiff(freq, noteFreq));
-      if (dist < minDist) {
-        minDist = dist;
-        closestFreq = noteFreq;
-        isValidNote = true;
-      }
-    }
-  }
-  
-  if (isValidNote && minDist < 30) {
-    // Correggi verso la nota più vicina se molto vicina
-    const correctedFreq = (minDist < 5) ? closestFreq : freq;
-    return {freq: correctedFreq, confidence, rms, corrected: true};
-  }
-  
-  return {freq: isValidNote ? freq : -1, confidence: isValidNote ? confidence * 0.8 : 0, rms};
-}
-
-
+// ─── UPDATE UI ────────────────────────────────────────────────────────────────
 let lastRange=150;
 function setStatus(type,text){
   statusEl.className="status"+(type?(" "+type):"");
@@ -387,131 +383,72 @@ function updateUI(freq){
   freqNowEl.textContent=`${freq.toFixed(2)} Hz`;
   deltaNowEl.textContent=`${cents>=0?"+":""}${Math.round(cents)} cents`;
 
-  if(absC<=3) setStatus("good","✓ Perfetto (±3 cents)");
+  if(absC<=3)      setStatus("good","✓ Perfetto (±3 cents)");
   else if(absC<=8) setStatus(cents<0?"low":"high", cents<0?"↓ Alza leggermente":"↑ Abbassa leggermente");
-  else setStatus(cents<0?"low":"high", cents<0?"↓ Troppo bassa (tira)":"↑ Troppo alta (molla)");
+  else             setStatus(cents<0?"low":"high", cents<0?"↓ Troppo bassa (tira)":"↑ Troppo alta (molla)");
 }
 
+// ─── BUFFER FFT SEPARATO per HPS ─────────────────────────────────────────────
+const FFT_FREQ_SIZE = 8192; // grande per risoluzione in frequenza
+let analyserFreq;
+const FREQ_BUF = new Float32Array(FFT_FREQ_SIZE/2);
 
-const FFT_SIZE = 4096; // RADDOPPIATO per maggiore risoluzione
+// ─── BUFFER PRINCIPALE ───────────────────────────────────────────────────────
 const BUF = new Float32Array(FFT_SIZE);
-const PROC_BUF = new Float32Array(FFT_SIZE); // Buffer separato per l'elaborazione
 
-// Filtro passa-banda per frequenze musicali (80Hz - 1200Hz)
-function bandpassFilter(buf, sr) {
-  const filtered = new Float32Array(buf.length);
-  const RC = 1 / (2 * Math.PI * 80); // Filtro passa-alto a 80Hz
-  const dt = 1 / sr;
-  const alpha = dt / (RC + dt);
-  
-  let y = buf[0];
-  for (let i = 1; i < buf.length; i++) {
-    y = alpha * (y + buf[i] - buf[i-1]);
-    filtered[i] = y;
-  }
-  
-  // Filtro passa-basso semplice
-  const cutoff = 1200; // Hz
-  const RC_low = 1 / (2 * Math.PI * cutoff);
-  const alpha_low = dt / (RC_low + dt);
-  
-  let y_low = filtered[0];
-  for (let i = 1; i < filtered.length; i++) {
-    y_low = y_low + alpha_low * (filtered[i] - y_low);
-    filtered[i] = y_low;
-  }
-  
-  return filtered;
-}
-
-// Rilevamento picchi per eliminare rumori impulsivi
-function removeSpikes(buf, threshold = 0.5) {
-  const result = new Float32Array(buf.length);
-  const mean = buf.reduce((a, b) => a + Math.abs(b), 0) / buf.length;
-  const maxPeak = Math.max(...buf.map(Math.abs));
-  
-  if (maxPeak > mean * 10) { // Probabile spike
-    for (let i = 0; i < buf.length; i++) {
-      if (Math.abs(buf[i]) > mean * 5) {
-        result[i] = (buf[i-1] + buf[i+1]) / 2; // Interpola
-      } else {
-        result[i] = buf[i];
-      }
-    }
-    return result;
-  }
-  return buf;
-}
-
+// ─── LOOP PRINCIPALE ─────────────────────────────────────────────────────────
 function tick(){
   if(!isRunning) return;
 
   analyser.getFloatTimeDomainData(BUF);
-  
-  // Copia e pre-elabora
-  let processedData = new Float32Array(BUF);
-  
-  // Rimuovi spikes
-  processedData = removeSpikes(processedData);
-  
-  // Applica filtro passa-banda
-  processedData = bandpassFilter(processedData, audioContext.sampleRate);
-  
-  const {freq, confidence, rms} = enhancedAutoCorrelate(processedData, audioContext.sampleRate);
 
-  // Rilevamento più sensibile ma focalizzato
-  const valid = (freq > 65 && freq < 1200 && confidence >= CONF_MIN); // Range note strumentali
+  // Copia buffer per YIN
+  const tmp = new Float32Array(BUF);
+
+  // Pitch detection con YIN
+  let {freq, confidence, rms} = detectPitchYIN(tmp, audioContext.sampleRate);
+
+  const valid = (freq > FREQ_MIN && freq < FREQ_MAX && confidence >= CONF_MIN);
 
   if(!valid){
-    stableFrames = Math.max(0, stableFrames - 1);
-    if (stableFrames <= 0) {
-      lastStableMidi = null;
-      setStatus("", "Ascolto… (suona una nota)");
-    }
+    stableFrames = 0;
+    setStatus("", "Ascolto… (suona una nota)");
     rafId = requestAnimationFrame(tick);
     return;
   }
 
-  // Filtro smoothing adattivo basato su confidenza
-  const alpha = 0.15 + (confidence * 0.1); // Più veloce se alta confidenza
-  if (smoothFreq == null) {
-    smoothFreq = freq;
-  } else {
-    smoothFreq = smoothFreq * (1 - alpha) + freq * alpha;
+  // Correzione ottava con FFT
+  if(analyserFreq){
+    analyserFreq.getFloatFrequencyData(FREQ_BUF);
+    freq = correctOctaveHPS(freq, FREQ_BUF, audioContext.sampleRate);
   }
 
-  const midiNow = freqToMidi(smoothFreq);
-  const midiR = Math.round(midiNow);
+  // Smoothing adattivo
+  const alpha = adaptiveAlpha(freq);
+  smoothFreq = (smoothFreq == null) ? freq : (smoothFreq*(1-alpha) + freq*alpha);
 
-  if(lastStableMidi == null) { 
-    lastStableMidi = midiR; 
-    stableFrames = 1;
-  } else {
+  const midiNow = freqToMidi(smoothFreq);
+  const midiR   = Math.round(midiNow);
+
+  if(lastStableMidi == null){ lastStableMidi=midiR; stableFrames=1; }
+  else{
     const target = midiToFreq(lastStableMidi);
     const centsFrom = centsDiff(smoothFreq, target);
-    
-    if(Math.abs(centsFrom) <= NOTE_HYSTERESIS_CENTS) {
-      stableFrames = Math.min(stableFrames + 1, STABLE_FRAMES_REQUIRED + 2);
+    if(Math.abs(centsFrom) <= NOTE_HYSTERESIS_CENTS){
+      stableFrames++;
     } else {
-      stableFrames = Math.max(0, stableFrames - 2);
-      if(stableFrames <= 0) { 
-        lastStableMidi = midiR; 
-        stableFrames = 1;
-      }
+      stableFrames = Math.max(0, stableFrames-1);
+      if(stableFrames <= 0){ lastStableMidi=midiR; stableFrames=1; }
     }
   }
 
-  if(stableFrames >= STABLE_FRAMES_REQUIRED) {
-    updateUI(smoothFreq);
-    setStatus("good", "Nota rilevata");
-  } else {
-    setStatus("", `Analisi... ${Math.floor(stableFrames/STABLE_FRAMES_REQUIRED*100)}%`);
-  }
+  if(stableFrames >= STABLE_FRAMES_REQUIRED) updateUI(smoothFreq);
+  else setStatus("", "Stabilizzo…");
 
   rafId = requestAnimationFrame(tick);
 }
 
-
+// ─── FULLSCREEN ───────────────────────────────────────────────────────────────
 async function enterFullscreen(){
   try{
     if(!document.fullscreenElement){
@@ -523,84 +460,90 @@ async function exitFullscreen(){
   try{ if(document.fullscreenElement) await document.exitFullscreen(); }catch(e){}
 }
 
-
+// ─── START ────────────────────────────────────────────────────────────────────
 async function start(){
   hideErr();
-
-  if (!window.isSecureContext) {
+  if(!window.isSecureContext){
     showErr("ERRORE: microfono richiede HTTPS.\nApri la pagina su https:// (non file://).");
     return;
   }
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     showErr("ERRORE: getUserMedia non supportato dal browser.");
     return;
   }
 
-  startBtn.disabled = true;
-  startBtn.textContent = "AVVIO…";
+  startBtn.disabled=true;
+  startBtn.textContent="AVVIO…";
 
   try{
     streamRef = await navigator.mediaDevices.getUserMedia({
-      audio: { 
-        echoCancellation: false, 
-        noiseSuppression: false, // Mantenuto false per non alterare il suono
-        autoGainControl: true,    // Attivato per migliorare il segnale debole
-        sampleRate: { ideal: 48000 } // Frequenza di campionamento ideale
-      }
+      audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }
     });
 
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({
-      sampleRate: 48000, // Campionamento più alto per migliore risoluzione
-      latencyHint: "playback"
-    });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioContext.state==="suspended") await audioContext.resume();
 
-    if (audioContext.state === "suspended") {
-      await audioContext.resume();
-    }
-
+    // Analyser principale per time-domain (YIN)
     analyser = audioContext.createAnalyser();
     analyser.fftSize = FFT_SIZE;
-    analyser.smoothingTimeConstant = 0; // Nessun smoothing per risposta immediata
+    analyser.smoothingTimeConstant = 0; // nessuno smoothing interno — lo facciamo noi
+
+    // Analyser secondario per frequenze (HPS octave correction)
+    analyserFreq = audioContext.createAnalyser();
+    analyserFreq.fftSize = FFT_FREQ_SIZE;
+    analyserFreq.smoothingTimeConstant = 0.5;
+
+    // Filtro passa-alto: elimina rumori sotto ~70Hz (botti, vibrazioni, AC)
+    const hipass = audioContext.createBiquadFilter();
+    hipass.type = "highpass";
+    hipass.frequency.value = 70;
+    hipass.Q.value = 0.7;
+
+    // Filtro passa-basso: elimina frequenze sopra range chitarra (~1400Hz)
+    const lopass = audioContext.createBiquadFilter();
+    lopass.type = "lowpass";
+    lopass.frequency.value = 1400;
+    lopass.Q.value = 0.7;
 
     micSource = audioContext.createMediaStreamSource(streamRef);
-    micSource.connect(analyser);
+    micSource.connect(hipass);
+    hipass.connect(lopass);
+    lopass.connect(analyser);
+    lopass.connect(analyserFreq);
 
     isRunning = true;
-    smoothFreq = null; 
-    lastStableMidi = null; 
-    stableFrames = 0;
+    smoothFreq=null; lastStableMidi=null; stableFrames=0;
 
     lastRange = 999;
     drawScale(150);
     lastRange = 150;
 
     setStatus("", "Ascolto… (suona una nota)");
-    stopBtn.style.display = "inline-flex";
-
-    startOverlay.style.display = "none";
+    stopBtn.style.display="inline-flex";
+    startOverlay.style.display="none";
 
     await enterFullscreen();
 
-    if (rafId) cancelAnimationFrame(rafId);
+    if(rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(tick);
 
   }catch(err){
     console.error(err);
     const name = err && err.name ? err.name : "";
     let msg = "Permesso microfono negato/non disponibile.\n";
-    if (name === "NotAllowedError" || name === "SecurityError") msg += "Consenti il microfono (lucchetto del browser) e ricarica.";
-    else if (name === "NotFoundError") msg += "Nessun microfono rilevato sul dispositivo.";
-    else if (name === "NotReadableError") msg += "Microfono occupato da un'altra app. Chiudi altre app e riprova.";
-    else msg += "Riprova o cambia browser (Chrome/Edge/Safari).";
+    if(name==="NotAllowedError"||name==="SecurityError") msg+="Consenti il microfono (lucchetto del browser) e ricarica.";
+    else if(name==="NotFoundError") msg+="Nessun microfono rilevato sul dispositivo.";
+    else if(name==="NotReadableError") msg+="Microfono occupato da un'altra app. Chiudi altre app e riprova.";
+    else msg+="Riprova o cambia browser (Chrome/Edge/Safari).";
     showErr(msg);
-
-    startOverlay.style.display = "flex";
+    startOverlay.style.display="flex";
   } finally {
-    startBtn.disabled = false;
-    startBtn.textContent = "AVVIA";
+    startBtn.disabled=false;
+    startBtn.textContent="AVVIA";
   }
 }
 
+// ─── STOP ────────────────────────────────────────────────────────────────────
 function stop(){
   isRunning=false;
   if(rafId) cancelAnimationFrame(rafId);
@@ -610,7 +553,7 @@ function stop(){
   try{ if(audioContext) audioContext.close(); }catch(e){}
   if(streamRef){ try{ streamRef.getTracks().forEach(t=>t.stop()); }catch(e){} }
 
-  micSource=null; analyser=null; audioContext=null; streamRef=null;
+  micSource=null; analyser=null; analyserFreq=null; audioContext=null; streamRef=null;
   smoothFreq=null; lastStableMidi=null; stableFrames=0;
 
   stopBtn.style.display="none";
@@ -625,37 +568,27 @@ function stop(){
   exitFullscreen();
 }
 
-
+// ─── RIFERIMENTO ─────────────────────────────────────────────────────────────
 function setReference(val){
-  referenceA4 = clamp(Number(val || 440), 380, 520);
-  refVal.textContent = `${referenceA4.toFixed(1)} Hz`;
+  referenceA4 = clamp(Number(val||440), 380, 520);
+  refVal.textContent  = `${referenceA4.toFixed(1)} Hz`;
   overlayRef.textContent = `${referenceA4.toFixed(1)} Hz`;
   refInput.value = referenceA4.toFixed(1);
-  
-  // Ricostruisce le frequenze cromatiche con il nuovo riferimento
-  CHROMATIC_FREQS.length = 0;
-  for (let midi = 21; midi <= 108; midi++) {
-    CHROMATIC_FREQS.push(midiToFreq(midi));
-  }
 }
 setReference(440);
 
 function openRefModal(){ refModal.classList.add("show"); }
 function closeRefModal(){ refModal.classList.remove("show"); }
 
-
+// ─── EVENTI ──────────────────────────────────────────────────────────────────
 startBtn.addEventListener("click", start);
 stopBtn.addEventListener("click", stop);
-
 overlayRefBtn.addEventListener("click", openRefModal);
 refBtn.addEventListener("click", openRefModal);
-
 refApply.addEventListener("click", ()=>{ setReference(refInput.value); closeRefModal(); });
 refClose.addEventListener("click", closeRefModal);
 refModal.addEventListener("click", (e)=>{ if(e.target===refModal) closeRefModal(); });
-
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden && isRunning) stop(); });
-
 
 startOverlay.style.display="flex";
 </script>
