@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web DJ Console 4-Deck</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --deck-bg: #2d2d2d;
+            --accent: #00ffcc;
+            --accent-dim: #008f72;
+            --text: #ffffff;
+            --danger: #ff4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* Layout Griglia */
+        .console-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 1400px;
+            background: #000;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Stile Deck */
+        .deck {
+            background-color: var(--deck-bg);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+
+        .deck.active { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-dim); }
+
+        .deck-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .deck-title { font-weight: bold; color: var(--accent); }
+        
+        /* BPM Display */
+        .bpm-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            background: #000;
+            color: var(--accent);
+            padding: 5px;
+            text-align: center;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        /* Controlli */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-play { background-color: #4CAF50; color: white; }
+        .btn-stop { background-color: var(--danger); color: white; }
+        .btn-sync { background-color: #2196F3; color: white; grid-column: span 2; }
+        
+        input[type="file"] {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        /* Sliders */
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label { font-size: 0.8rem; color: #aaa; }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* Mixer Section (Crossfader) */
+        .mixer-section {
+            grid-column: 1 / -1;
+            background: #222;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .crossfader-container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Visualizer Placeholder */
+        .track-info {
+            font-size: 0.8rem;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            height: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .console-container { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .console-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>JS DJ Console <span style="font-size:0.5em; color:#666">4-Deck System</span></h1>
+
+    <div class="console-container">
+        <!-- I 4 Deck verranno generati qui -->
+        <div class="deck" id="deck-0">
+            <div class="deck-header">
+                <span class="deck-title">DECK A</span>
+                <span class="bpm-display" id="bpm-0">--</span>
+            </div>
+            <input type="file" accept="audio/*" onchange="loadTrack(0, this)">
+            <div class="track-info" id="track-name-0">Nessuna traccia</div>
+            
+            <div class="controls">
+                <button class="btn-play" onclick="playDeck(0)">Play</button>
+                <button class="btn-stop" onclick="stopDeck(0)">Stop</button>
+                <button class="btn-sync" onclick="syncDeck(0)">SYNC TO A</button>
+            </div>
+
+            <div class="slider-group">
+                <label>Velocità / Pitch (<span id="rate-val-0">1.00</span>x)</label>
+                <input type="range" min="0.5" max="1.5" step="0.01" value="1" oninput="setSpeed(0, this.value)">
+            </div>
+            
+            <div class="slider-group">
+                <label>Volume</label>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="setVolume(0, this.value)">
+            </div>
+        </div>
+
+        <div class="deck" id="deck-1">
+            <div class="deck-header">
+                <span class="deck-title">DECK B</span>
+                <span class="bpm-display" id="bpm-1">--</span>
+            </div>
+            <input type="file" accept="audio/*" onchange="loadTrack(1, this)">
+            <div class="track-info" id="track-name-1">Nessuna traccia</div>
+            
+            <div class="controls">
+                <button class="btn-play" onclick="playDeck(1)">Play</button>
+                <button class="btn-stop" onclick="stopDeck(1)">Stop</button>
+                <button class="btn-sync" onclick="syncDeck(1)">SYNC TO A</button>
+            </div>
+
+            <div class="slider-group">
+                <label>Velocità / Pitch (<span id="rate-val-1">1.00</span>x)</label>
+                <input type="range" min="0.5" max="1.5" step="0.01" value="1" oninput="setSpeed(1, this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Volume</label>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="setVolume(1, this.value)">
+            </div>
+        </div>
+
+        <div class="deck" id="deck-2">
+            <div class="deck-header">
+                <span class="deck-title">DECK C</span>
+                <span class="bpm-display" id="bpm-2">--</span>
+            </div>
+            <input type="file" accept="audio/*" onchange="loadTrack(2, this)">
+            <div class="track-info" id="track-name-2">Nessuna traccia</div>
+            
+            <div class="controls">
+                <button class="btn-play" onclick="playDeck(2)">Play</button>
+                <button class="btn-stop" onclick="stopDeck(2)">Stop</button>
+                <button class="btn-sync" onclick="syncDeck(2)">SYNC TO A</button>
+            </div>
+
+            <div class="slider-group">
+                <label>Velocità / Pitch (<span id="rate-val-2">1.00</span>x)</label>
+                <input type="range" min="0.5" max="1.5" step="0.01" value="1" oninput="setSpeed(2, this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Volume</label>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="setVolume(2, this.value)">
+            </div>
+        </div>
+
+        <div class="deck" id="deck-3">
+            <div class="deck-header">
+                <span class="deck-title">DECK D</span>
+                <span class="bpm-display" id="bpm-3">--</span>
+            </div>
+            <input type="file" accept="audio/*" onchange="loadTrack(3, this)">
+            <div class="track-info" id="track-name-3">Nessuna traccia</div>
+            
+            <div class="controls">
+                <button class="btn-play" onclick="playDeck(3)">Play</button>
+                <button class="btn-stop" onclick="stopDeck(3)">Stop</button>
+                <button class="btn-sync" onclick="syncDeck(3)">SYNC TO A</button>
+            </div>
+
+            <div class="slider-group">
+                <label>Velocità / Pitch (<span id="rate-val-3">1.00</span>x)</label>
+                <input type="range" min="0.5" max="1.5" step="0.01" value="1" oninput="setSpeed(3, this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Volume</label>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="setVolume(3, this.value)">
+            </div>
+        </div>
+
+        <!-- Mixer Centrale -->
+        <div class="mixer-section">
+            <span>MASTER VOL</span>
+            <input type="range" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)">
+            <div class="crossfader-container">
+                <label style="display:block; text-align:center; margin-bottom:5px;">CROSSFADER (A-B)</label>
+                <input type="range" min="0" max="1" step="0.01" value="0.5" oninput="setCrossfader(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAZIONE AUDIO ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        
+        // Stato dei Deck
+        const decks = [
+            { buffer: null, source: null, gainNode: null, bpm: 0, isPlaying: false, speed: 1.0 },
+            { buffer: null, source: null, gainNode: null, bpm: 0, isPlaying: false, speed: 1.0 },
+            { buffer: null, source: null, gainNode: null, bpm: 0, isPlaying: false, speed: 1.0 },
+            { buffer: null, source: null, gainNode: null, bpm: 0, isPlaying: false, speed: 1.0 }
+        ];
+
+        // Master Gain
+        const masterGain = ctx.createGain();
+        masterGain.connect(ctx.destination);
+        masterGain.gain.value = 0.8;
+
+        // --- FUNZIONI DI CARICAMENTO ---
+
+        async function loadTrack(deckIndex, inputElement) {
+            const file = inputElement.files[0];
+            if (!file) return;
+
+            // UI Update
+            document.getElementById(`track-name-${deckIndex}`).innerText = file.name;
+            document.getElementById(`deck-${deckIndex}`).classList.add('active');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                ctx.decodeAudioData(arrayBuffer, function(buffer) {
+                    decks[deckIndex].buffer = buffer;
+                    // Calcola BPM
+                    const detectedBPM = detectBPM(buffer);
+                    decks[deckIndex].bpm = detectedBPM;
+                    document.getElementById(`bpm-${deckIndex}`).innerText = Math.round(detectedBPM);
+                    
+                    // Crea nodo gain per il deck se non esiste
+                    if(!decks[deckIndex].gainNode) {
+                        decks[deckIndex].gainNode = ctx.createGain();
+                        decks[deckIndex].gainNode.connect(masterGain);
+                    }
+
+                }, function(e) { console.error("Errore decoding audio", e); });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- CONTROLLI DI RIPRODUZIONE ---
+
+        function playDeck(index) {
+            if (!decks[index].buffer) return alert("Carica prima una traccia!");
+            
+            // Se l'audio context è suspended (policy browser), riavvialo
+            if (ctx.state === 'suspended') ctx.resume();
+
+            // Stop precedente se esiste
+            if (decks[index].source) {
+                try { decks[index].source.stop(); } catch(e){}
+            }
+
+            const source = ctx.createBufferSource();
+            source.buffer = decks[index].buffer;
+            source.playbackRate.value = decks[index].speed;
+            
+            // Collega al gain del deck
+            source.connect(decks[index].gainNode);
+            
+            source.start(0);
+            decks[index].source = source;
+            decks[index].isPlaying = true;
+
+            // Loop opzionale (commenta se vuoi che si fermi alla fine)
+            source.loop = true; 
+        }
+
+        function stopDeck(index) {
+            if (decks[index].source) {
+                try {
+                    decks[index].source.stop();
+                } catch(e){}
+                decks[index].source = null;
+            }
+            decks[index].isPlaying = false;
+        }
+
+        function setSpeed(index, val) {
+            decks[index].speed = parseFloat(val);
+            document.getElementById(`rate-val-${index}`).innerText = val;
+            if (decks[index].source) {
+                decks[index].source.playbackRate.value = decks[index].speed;
+            }
+        }
+
+        function setVolume(index, val) {
+            if (decks[index].gainNode) {
+                decks[index].gainNode.gain.value = val;
+            }
+        }
+
+        function setMasterVolume(val) {
+            masterGain.gain.value = val;
+        }
+
+        function setCrossfader(val) {
+            // Logica semplice crossfader: Val 0 = Tutto Deck A, Val 1 = Tutto Deck B
+            // Per 4 deck, facciamo una mappa semplificata o usiamo solo A e B per il crossfader
+            // In questo demo, il crossfader controlla solo i primi due deck per semplicità
+            const volA = 1 - val; 
+            const volB = val;
+            
+            if(decks[0].gainNode) decks[0].gainNode.gain.value = volA; // Nota: sovrascrive il volume del deck se non gestito bene, qui semplifichiamo
+            if(decks[1].gainNode) decks[1].gainNode.gain.value = volB;
+        }
+
+        // --- FUNZIONE SYNC ---
+        // Sincronizza la velocità del deck corrente al BPM del Deck A (Master)
+        function syncDeck(index) {
+            if (index === 0) return alert("Il Deck A è il Master di riferimento.");
+            if (decks[0].bpm === 0 || decks[index].bpm === 0) return alert("BPM non rilevato o traccia non caricata.");
+
+            const targetBPM = decks[0].bpm;
+            const currentBPM = decks[index].bpm;
+            
+            // Calcola il rapporto necessario
+            const ratio = targetBPM / currentBPM;
+            
+            // Applica la velocità
+            setSpeed(index, ratio);
+            
+            // Se sta suonando, aggiorna immediatamente
+            if(decks[index].source) {
+                decks[index].source.playbackRate.value = ratio;
+            }
+        }
+
+        // --- ALGORITMO BPM (SEMPLIFICATO) ---
+        // Nota: Il rilevamento BPM perfetto in JS puro è complesso. 
+        // Questo è un algoritmo euristico basato sui picchi di energia (transienti).
+        function detectBPM(buffer) {
+            const data = buffer.getChannelData(0); // Usa solo il canale sinistro
+            const sampleRate = buffer.sampleRate;
+            const peakData = [];
+            
+            // 1. Trova i picchi di volume (Transients)
+            // Dividiamo l'audio in finestre di 512 sample
+            const step = 512; 
+            let maxPeak = 0;
+            
+            for (let i = 0; i < data.length; i += step) {
+                let sum = 0;
+                for (let j = 0; j < step; j++) {
+                    sum += Math.abs(data[i + j]);
+                }
+                const avg = sum / step;
+                peakData.push(avg);
+                if(avg > maxPeak) maxPeak = avg;
+            }
+
+            // 2. Soglia per considerare un "beat" (es. 70% del volume massimo)
+            const threshold = maxPeak * 0.7;
+            const beats = [];
+            
+            for (let i = 0; i < peakData.length; i++) {
+                if (peakData[i] > threshold) {
+                    // Evita doppi beep vicini (debounce)
+                    if (beats.length === 0 || (i - beats[beats.length - 1]) > 10) {
+                        beats.push(i);
+                    }
+                }
+            }
+
+            // 3. Calcola le distanze tra i beat
+            const intervals = [];
+            for (let i = 1; i < beats.length; i++) {
+                intervals.push(beats[i] - beats[i-1]);
+            }
+
+            // 4. Trova l'intervallo più comune (istogramma semplificato)
+            // Convertiamo gli intervalli in BPM: (SampleRate / Step) * 60 / intervallo
+            const bpmCounts = {};
+            
+            intervals.forEach(interval => {
+                if(interval === 0) return;
+                const bpm = Math.round((sampleRate / step) * 60 / interval);
+                
+                // Filtra BPM improbabili (sotto 60 o sopra 200)
+                if (bpm > 60 && bpm < 200) {
+                    bpmCounts[bpm] = (bpmCounts[bpm] || 0) + 1;
+                }
+            });
+
+            // Trova il BPM con più occorrenze
+            let maxCount = 0;
+            let detectedBPM = 0;
+            for (const bpm in bpmCounts) {
+                if (bpmCounts[bpm] > maxCount) {
+                    maxCount = bpmCounts[bpm];
+                    detectedBPM = parseInt(bpm);
+                }
+            }
+
+            // Fallback se non trova nulla di sensato
+            return detectedBPM > 0 ? detectedBPM : 120; 
+        }
+
+    </script>
+</body>
+</html>
