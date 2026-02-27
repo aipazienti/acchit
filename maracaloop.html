@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Loopstation 8 Tracce • Metronomo Grid • Per-Track Bars • WAV Export</title>
+  <title>Loopstation 8 Tracce + Metronomo (Chrome Android/Desktop)</title>
+  <title>Loopstation 8 Tracce + Metronomo + Sync Grid</title>
 <style>
 :root{
 --bg:#0f1115; --text:#e7ecff; --muted:#a7b0d6;
@@ -33,8 +34,6 @@ background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)
 color:var(--text); padding:10px 12px; border-radius:12px;
 box-shadow: 0 6px 18px rgba(0,0,0,.25);
 cursor:pointer; user-select:none;
-display:inline-flex; align-items:center; justify-content:center; gap:8px;
-white-space:nowrap;
 }
 .btn:hover{filter:brightness(1.06); border-color:#3a4566;}
 .btn:disabled{opacity:.45; cursor:not-allowed;}
@@ -46,64 +45,42 @@ white-space:nowrap;
 padding:9px 12px; border-radius:999px; border:1px solid var(--stroke);
 background: rgba(255,255,255,.03); color:var(--muted); display:flex; align-items:center; gap:10px;
 }
-.pill select, .pill input{
+.pill select{
 background: rgba(0,0,0,.25); border:1px solid var(--stroke2);
 color:var(--text); padding:7px 10px; border-radius:10px; outline:none;
 }
-.pill input{width:100px}
 
 /* Metronome panel */
-.metro-wrap{ width:min(1100px, 94vw); padding: 0 10px 14px; }
-
-/* Sticky metronome (panel) */
-.metro-wrap{
-position: sticky;
-top: 56px; /* below floating strip */
-z-index: 800;
-background: rgba(15,17,21,.72);
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-border-bottom: 1px solid rgba(42,50,71,.35);
-}
-
-/* Floating metronome strip (always visible) */
-.metro-float{
-position: sticky;
-top: 0;
-z-index: 1000;
-width:min(1100px, 94vw);
-margin: 0 auto;
-padding: 10px 10px 8px;
-display:flex; align-items:center; justify-content:space-between; gap:12px;
-background: rgba(15,17,21,.82);
-backdrop-filter: blur(12px);
--webkit-backdrop-filter: blur(12px);
-border-bottom:1px solid rgba(42,50,71,.55);
-}
-.mf-left{display:flex; flex-direction:column; gap:2px;}
-.mf-label{font-size:12px; letter-spacing:.12em; color:var(--muted);}
-.mf-sub{font-size:13px; color:var(--text); opacity:.9;}
-.mf-leds{display:flex; align-items:center; gap:10px;}
-.mf-leds .leds{display:flex; gap:8px; align-items:center;}
-.mf-leds .led{width:12px; height:12px;}
-.mf-leds .led.bar{width:14px; height:14px;}
-
+    .metro-wrap{
+      width:min(1100px, 94vw);
+      padding: 0 10px 14px;
+    }
+    .metro-wrap{ width:min(1100px, 94vw); padding: 0 10px 14px; }
 .metro{
 border:1px solid var(--stroke);
 border-radius: var(--radius);
 background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
 box-shadow: var(--shadow);
 padding: 12px 14px;
-display:flex; flex-wrap:wrap; gap:12px;
-align-items:center; justify-content:space-between;
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      display:flex; flex-wrap:wrap; gap:12px;
+      align-items:center; justify-content:space-between;
 }
 .metro-left{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
 .metro-right{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
 
 .metro-group{
 display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-padding:8px 10px; border:1px solid var(--stroke2);
-border-radius:14px; background: rgba(0,0,0,.18);
+      padding:8px 10px;
+      border:1px solid var(--stroke2);
+      border-radius:14px;
+      background: rgba(0,0,0,.18);
+      padding:8px 10px; border:1px solid var(--stroke2);
+      border-radius:14px; background: rgba(0,0,0,.18);
 }
 .metro-group label{font-size:12px; color:var(--muted);}
 .metro-group input[type="range"]{width:160px; height:10px; margin:0; transform:none;}
@@ -142,6 +119,25 @@ filter: drop-shadow(0 0 12px rgba(255,59,59,.75));
 transform: scale(1.2);
 }
 
+.countin{
+font-size:12px;
+color: var(--muted);
+padding:6px 10px;
+border:1px solid var(--stroke2);
+border-radius:999px;
+background: rgba(0,0,0,.22);
+      min-width: 190px;
+      min-width: 210px;
+text-align:center;
+      user-select:none;
+}
+.countin.active{
+color:#ffd0d0;
+border-color: rgba(255,59,59,.35);
+background: rgba(255,59,59,.08);
+box-shadow: 0 0 18px rgba(255,59,59,.10);
+}
+
 .statusbar{
 width:min(1100px, 94vw); padding:0 10px 16px;
 display:flex; gap:12px; flex-wrap:wrap; align-items:center; color:var(--muted);
@@ -176,7 +172,7 @@ pointer-events:none; transform:rotate(-8deg);
 }
 .track > *{position:relative;}
 .track-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
-.track-title{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+.track-title{display:flex; align-items:baseline; gap:10px;}
 .track-title .n{font-weight:800; font-size:18px; opacity:.95;}
 .track-title .label{font-size:13px; color:var(--muted);}
 .mini{display:flex; gap:8px; align-items:center;}
@@ -184,7 +180,6 @@ pointer-events:none; transform:rotate(-8deg);
 font-size:12px; padding:4px 8px; border:1px solid var(--stroke2);
 border-radius:999px; color:var(--muted); background: rgba(0,0,0,.22);
 letter-spacing:.04em; text-transform:uppercase;
-white-space:nowrap;
 }
 .tag.rec{border-color:rgba(255,59,59,.35); color:#ffd0d0;}
 .tag.play{border-color:rgba(78,230,255,.35); color:#d6fbff;}
@@ -228,17 +223,8 @@ background: rgba(255,255,255,.85); border:2px solid rgba(0,0,0,.35);
 box-shadow:0 6px 18px rgba(0,0,0,.45); cursor:pointer;
 }
 
-.track-actions{display:flex; gap:8px; margin-top:12px; justify-content:space-between; flex-wrap:wrap;}
-.track-actions .btn{padding:9px 10px; border-radius:12px; flex:1; justify-content:center; min-width:96px;}
-
-.track-settings{
-display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
-padding:10px; border-radius:14px; border:1px solid var(--stroke2);
-background: rgba(0,0,0,.18);
-}
-.track-settings .pill{padding:6px 10px}
-.track-settings .pill select{padding:6px 8px}
-.track-settings .pill span{font-size:12px; color:var(--muted);}
+.track-actions{display:flex; gap:8px; margin-top:12px; justify-content:space-between;}
+.track-actions .btn{padding:9px 10px; border-radius:12px; flex:1; justify-content:center;}
 
 .footer-note{width:min(1100px, 94vw); padding:0 10px 26px; color:var(--muted); font-size:13px; line-height:1.4;}
 code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px solid var(--stroke2);}
@@ -260,22 +246,11 @@ code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px 
 <button class="btn btn-good" id="btnPlayAll" disabled>Play All</button>
 <button class="btn btn-danger" id="btnStopAll" disabled>Stop All</button>
 <button class="btn" id="btnClearAll" disabled>Clear All</button>
-<button class="btn" id="btnSaveAll" disabled>Save ALL WAV</button>
 </div>
 </header>
 
-<!-- Metronome floating strip (always visible) -->
-<div class="metro-float" aria-label="Metronomo sempre visibile">
-<div class="mf-left">
-<span class="mf-label">METRO</span>
-<span class="mf-sub"><span id="mfBpm">90</span> BPM • <span id="mfSig">4/4</span></span>
-</div>
-<div class="mf-leds">
-<div class="leds" id="beatLedsFloat"></div>
-<span class="led bar" id="barLedFloat"></span>
-</div>
-</div>
-
+  <!-- Metronome -->
+  <!-- Metronome / Grid -->
 <div class="metro-wrap">
 <div class="metro">
 <div class="metro-left">
@@ -307,38 +282,56 @@ code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px 
 <span class="led bar" id="barLed"></span>
 </div>
 </div>
+
+<div class="metro-group">
+          <label>Count-in</label>
+          <label>Count-in (misure)</label>
+          <select id="countInBars">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="4" selected>4</option>
+            <option value="8">8</option>
+          </select>
+<div class="countin" id="countInBox">—</div>
+</div>
 </div>
 
 <div class="metro-right">
 <div class="metro-group">
-<label>Sync start</label>
-<select id="syncMode">
-<option value="on" selected>ON</option>
-<option value="off">OFF</option>
-</select>
-</div>
+          <label>Registra (durata)</label>
+          <div style="color:var(--muted); font-size:12px;">
+            quantizza: +<b>2/4</b>, poi arrotonda al blocco misura
+          </div>
+          <label>Lunghezza REC (misure)</label>
+          <select id="recBars">
+            <option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option>
+          </select>
+        </div>
 
-<div class="metro-group">
-<label>Anticipo REC</label>
-<input id="leadMs" type="number" min="0" max="2000" step="10" value="880" />
-<label style="min-width:68px">ms</label>
-</div>
+        <div class="metro-group">
+          <label>Quantizzazione</label>
+          <select id="quantMode" title="Come determinare la durata del loop registrato">
+            <option value="fixed" selected>Fissa (REC bars)</option>
+            <option value="ceilbars">Arrotonda su misura</option>
+          </select>
+          <label>Extra (1/4)</label>
+          <select id="extraBeats">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
 
-<div class="metro-group">
-<label>Calibrazione</label>
-<button class="btn" id="btnCalibrate" disabled>Prova inizio REC</button>
-<span style="color:var(--muted); font-size:12px;" id="calibStatus">—</span>
-</div>
-
-<div class="metro-group">
-<label>Extra fine (1/4)</label>
-<select id="extraBeats">
-<option value="0">0</option>
-<option value="1">1</option>
-<option value="2" selected>2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-</select>
+        <div class="metro-group">
+          <label>Sync start</label>
+          <select id="syncMode" title="Allinea start/loop alla griglia metronomo">
+            <option value="on" selected>ON</option>
+            <option value="off">OFF</option>
+          </select>
+          <span style="color:var(--muted); font-size:12px;">(play/loop precisi)</span>
 </div>
 </div>
 </div>
@@ -347,7 +340,8 @@ code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px 
 <div class="statusbar">
 <div class="badge"><span class="dot" id="dotAudio"></span> AudioContext</div>
 <div class="badge"><span class="dot" id="dotInput"></span> Ingresso</div>
-<div class="badge">Beat: <b id="beatMs">—</b> ms • Bar: <b id="barMs">—</b> ms</div>
+    <div class="badge">Master loop: <b id="masterLen">—</b></div>
+    <div class="badge">Master: <b id="masterBars">—</b> misure • <b id="masterLen">—</b></div>
 <div class="badge">SampleRate: <b id="sr">—</b></div>
 <div class="badge">Codec REC: <b id="codec">—</b></div>
 </div>
@@ -356,8 +350,14 @@ code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px 
 
 <div class="footer-note">
 <ul>
-<li>Ogni traccia esporta un file <b>.wav</b> (PCM 16-bit) della lunghezza completa della traccia.</li>
-<li>Su Chrome Android, il download può aprire il file invece di salvarlo: dipende dalle impostazioni del device.</li>
+<li>Apri da <code>https://</code> o <code>http://localhost</code>. Evita <code>file://</code>.</li>
+      <li>Traccia 1 (prima registrazione): tap → <b>count-in 4 MISURE</b> (BAR 0…3) → REC automatico.</li>
+      <li>Tap durante il count-in: annulla.</li>
+      <li>Tap breve: REC → (tap) STOP+PLAY → STOP → PLAY…</li>
+      <li>Pressione lunga (>3s): conferma cancellazione traccia.</li>
+      <li>Tap su una traccia vuota: avvia count-in (se impostato) → registra automaticamente per la durata scelta.</li>
+      <li>Fine registrazione: la traccia va in PLAY automaticamente. Tap: STOP/PLAY. Pressione lunga (&gt;3s): clear.</li>
+      <li>La prima traccia imposta la lunghezza master (misure). Le successive vengono forzate a quella durata.</li>
 </ul>
 </div>
 
@@ -365,69 +365,74 @@ code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; border:1px 
 (() => {
 const TRACKS = 8;
 
+// Audio
 let audioCtx = null;
 let inputStream = null;
 let masterGain = null;
 
-// Grid transport
-let gridStartTime = null;
+  // Master loop duration (seconds)
+  // Master loop
+let masterLoopSeconds = null;
+  let masterBars = null;
 
-// Metronome (visual, mute)
+  // Grid transport
+  let gridStartTime = null; // AudioContext time of BAR 0 BEAT 0
+  let transportArmed = false;
+
+  // Metronome state (visual, mute)
+  // Metronome (visual, mute)
 let metroOn = false;
 let metroTimer = null;
 let metroBeatIndex = 0;
 let nextBeatAtMs = 0;
 
-// Per-track countdown + schedule
-const countdowns = new Map(); // trackIndex -> state
-const schedules = new Map();  // trackIndex -> {startTimeout, stopTimeout}
+  // Count-in: 4 MISURE (bars) starting from 0
+  // Count-in state
+let countInActive = false;
+let countInTimer = null;
+let countInBeatGlobal = 0;
+  const countInBars = 4;
+let countInTrackRef = null;
 
-const gridEl = document.getElementById("grid");
+  // Scheduled record timer
+  let recordStartTimeout = null;
+  let recordStopTimeout = null;
+
+const grid = document.getElementById("grid");
 const btnInit = document.getElementById("btnInit");
 const btnPlayAll = document.getElementById("btnPlayAll");
 const btnStopAll = document.getElementById("btnStopAll");
 const btnClearAll = document.getElementById("btnClearAll");
-const btnSaveAll = document.getElementById("btnSaveAll");
 const sourceSelect = document.getElementById("sourceSelect");
 
 const dotAudio = document.getElementById("dotAudio");
 const dotInput = document.getElementById("dotInput");
+const masterLenEl = document.getElementById("masterLen");
+  const masterBarsEl = document.getElementById("masterBars");
 const srEl = document.getElementById("sr");
 const codecEl = document.getElementById("codec");
-const beatMsEl = document.getElementById("beatMs");
-const barMsEl = document.getElementById("barMs");
 
+  // Metronome UI
+  // Metronome / grid UI
 const btnMetro = document.getElementById("btnMetro");
 const bpm = document.getElementById("bpm");
 const bpmVal = document.getElementById("bpmVal");
 const tsig = document.getElementById("tsig");
 const beatLeds = document.getElementById("beatLeds");
 const barLed = document.getElementById("barLed");
-const beatLedsFloat = document.getElementById("beatLedsFloat");
-const barLedFloat = document.getElementById("barLedFloat");
-const mfBpm = document.getElementById("mfBpm");
-const mfSig = document.getElementById("mfSig");
+const countInBox = document.getElementById("countInBox");
 
-const syncModeSel = document.getElementById("syncMode");
-const leadMsEl = document.getElementById("leadMs");
-const extraBeatsSel = document.getElementById("extraBeats");
-const btnCalibrate = document.getElementById("btnCalibrate");
-const calibStatus = document.getElementById("calibStatus");
+  const countInBarsSel = document.getElementById("countInBars");
+  const recBarsSel = document.getElementById("recBars");
+  const quantModeSel = document.getElementById("quantMode");
+  const extraBeatsSel = document.getElementById("extraBeats");
+  const syncModeSel = document.getElementById("syncMode");
 
 const tracks = [];
 
-function syncOn(){ return syncModeSel.value === "on"; }
-function getLeadSeconds(){ return Math.max(0, parseFloat(leadMsEl.value || "0") / 1000); }
-function getExtraBeats(){ return parseInt(extraBeatsSel.value, 10); }
-
-function getBpm(){ return parseInt(bpm.value, 10); }
-function getNumerator(){ return parseInt(tsig.value, 10); }
-function beatSeconds(){ return 60 / getBpm(); }
-function barSeconds(){ return getNumerator() * beatSeconds(); }
-
-function updateTimingBadges(){
-beatMsEl.textContent = String(Math.round(beatSeconds()*1000));
-barMsEl.textContent = String(Math.round(barSeconds()*1000));
+function fmtSec(s){
+if (s == null || !isFinite(s)) return "—";
+return (s < 10 ? s.toFixed(2) : s.toFixed(1)) + "s";
 }
 
 function setDots(){
@@ -435,17 +440,23 @@ dotAudio.classList.toggle("on", !!audioCtx && audioCtx.state === "running");
 dotInput.classList.toggle("on", !!inputStream);
 }
 
-function anyBuffers(){ return tracks.some(t => !!t.buffer); }
+  function setMasterLoop(seconds){
+  function setMasterLoop(seconds, bars){
+masterLoopSeconds = seconds;
+    masterBars = bars;
+masterLenEl.textContent = fmtSec(masterLoopSeconds);
+    masterBarsEl.textContent = String(masterBars ?? "—");
+}
 
 function updateGlobalButtons(){
-const anyHasBuffer = anyBuffers();
+const anyHasBuffer = tracks.some(t => !!t.buffer);
 const anyPlaying = tracks.some(t => t.isPlaying);
-const anyBusy = tracks.some(t => t.isRecording || t.isArmedRecord || t.isCountingIn);
+    const anyRecording = tracks.some(t => t.isRecording);
+    const anyRecording = tracks.some(t => t.isRecording || t.isArmedRecord);
 
 btnPlayAll.disabled = !audioCtx || !anyHasBuffer;
-btnStopAll.disabled = !audioCtx || (!anyPlaying && !anyBusy);
+btnStopAll.disabled = !audioCtx || (!anyPlaying && !anyRecording && !countInActive);
 btnClearAll.disabled = !audioCtx || !anyHasBuffer;
-btnSaveAll.disabled = !anyHasBuffer;
 }
 
 function pickBestMimeType(){
@@ -462,35 +473,80 @@ if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTyp
 return '';
 }
 
-function ensureGridStartArmed(){
-if (!audioCtx) return;
-if (gridStartTime != null) return;
-gridStartTime = audioCtx.currentTime + 0.40;
-}
+  // Timing
+function getBpm(){ return parseInt(bpm.value, 10); }
+function getNumerator(){ return parseInt(tsig.value, 10); }
+function beatSeconds(){ return 60 / getBpm(); }                 // quarter note
+function barSeconds(){ return getNumerator() * beatSeconds(); } // N/4
+  function getCountInBars(){ return parseInt(countInBarsSel.value, 10); }
+  function getRecBars(){ return parseInt(recBarsSel.value, 10); }
+  function getExtraBeats(){ return parseInt(extraBeatsSel.value, 10); }
+  function getQuantMode(){ return quantModeSel.value; } // fixed or ceilbars
+  function syncOn(){ return syncModeSel.value === "on"; }
 
-function nextBarTime(fromTime){
-if (!syncOn() || gridStartTime == null) return fromTime;
+  // Quantization: determine target length for a recording
+  function computeTargetLengthSeconds(rawSeconds){
+    const extra = getExtraBeats() * beatSeconds();
+    const mode = getQuantMode();
+
+    if (mode === "fixed"){
+      // fixed bars (global rec bars) + extra beats
+      const bars = (masterBars != null) ? masterBars : getRecBars();
+      return bars * barSeconds() + extra;
+    }
+
+  // +2/4 extra = 2 beats (quarters) before rounding to next bar block
+  function quantizeDurationSeconds(rawSeconds){
+    const extra = 2 * beatSeconds();
+    // ceil to next full bar after (raw + extra)
+const target = rawSeconds + extra;
 const bar = barSeconds();
-const t = Math.max(fromTime, audioCtx.currentTime);
-const rel = t - gridStartTime;
-const barsPassed = Math.ceil(rel / bar);
-return gridStartTime + barsPassed * bar;
+const bars = Math.max(1, Math.ceil(target / bar));
+    // If master exists, force to master length (strong sync)
+    if (masterLoopSeconds != null) return masterLoopSeconds;
+return bars * bar;
 }
 
-// LEDs
+  // Transport alignment: define a gridStartTime and schedule to next bar boundary
+  function ensureGridStartArmed(){
+    if (!audioCtx) return;
+    if (gridStartTime != null) return;
+
+    // Put BAR0 slightly in the future so we can schedule start precisely
+    const now = audioCtx.currentTime;
+    const lead = 0.35; // seconds
+    gridStartTime = now + lead;
+    transportArmed = true;
+  }
+
+  function nextBarTime(fromTime){
+    if (!syncOn() || gridStartTime == null) return fromTime;
+
+    const bar = barSeconds();
+    const t = Math.max(fromTime, audioCtx.currentTime);
+    const rel = t - gridStartTime;
+    const barsPassed = Math.ceil(rel / bar);
+    return gridStartTime + barsPassed * bar;
+  }
+
+  function nextBeatTime(fromTime){
+    if (!syncOn() || gridStartTime == null) return fromTime;
+
+    const beat = beatSeconds();
+    const t = Math.max(fromTime, audioCtx.currentTime);
+    const rel = t - gridStartTime;
+    const beatsPassed = Math.ceil(rel / beat);
+    return gridStartTime + beatsPassed * beat;
+  }
+
+  // LEDs
 function buildBeatLeds(){
 beatLeds.innerHTML = "";
-if (beatLedsFloat) beatLedsFloat.innerHTML = "";
 const n = getNumerator();
 for (let i = 0; i < n; i++){
 const s = document.createElement("span");
 s.className = "led";
 beatLeds.appendChild(s);
-if (beatLedsFloat){
-const f = document.createElement("span");
-f.className = "led";
-beatLedsFloat.appendChild(f);
-}
 }
 metroBeatIndex = 0;
 }
@@ -498,23 +554,13 @@ metroBeatIndex = 0;
 function flashBeat(i){
 const leds = beatLeds.querySelectorAll(".led");
 leds.forEach((l, idx) => l.classList.toggle("on", idx === i));
-const fLeds = beatLedsFloat ? beatLedsFloat.querySelectorAll(".led") : null;
-if (fLeds) fLeds.forEach((l, idx) => l.classList.toggle("on", idx === i));
 if (i === 0){
 barLed.classList.add("on");
-if (barLedFloat) barLedFloat.classList.add("on");
-setTimeout(() => {
-barLed.classList.remove("on");
-if (barLedFloat) barLedFloat.classList.remove("on");
-}, 110);
+setTimeout(() => barLed.classList.remove("on"), 110);
 }
 setTimeout(() => {
 const l = leds[i];
 if (l) l.classList.remove("on");
-if (fLeds){
-const fl = fLeds[i];
-if (fl) fl.classList.remove("on");
-}
 }, 90);
 }
 
@@ -524,9 +570,7 @@ btnMetro.textContent = "ON";
 if (metroTimer) clearTimeout(metroTimer);
 metroTimer = null;
 beatLeds.querySelectorAll(".led").forEach(l => l.classList.remove("on"));
-if (beatLedsFloat) beatLedsFloat.querySelectorAll(".led").forEach(l => l.classList.remove("on"));
 barLed.classList.remove("on");
-if (barLedFloat) barLedFloat.classList.remove("on");
 }
 
 function startMetronome(){
@@ -549,6 +593,91 @@ metroTimer = setTimeout(tick, 10);
 tick();
 }
 
+  // COUNT-IN UI
+  // Count-in UI
+function setCountInUI(active, txt){
+countInBox.textContent = txt ?? "—";
+countInBox.classList.toggle("active", !!active);
+}
+
+  function clearScheduledRecordTimers(){
+    if (recordStartTimeout) { clearTimeout(recordStartTimeout); recordStartTimeout = null; }
+    if (recordStopTimeout) { clearTimeout(recordStopTimeout); recordStopTimeout = null; }
+  }
+
+function cancelCountIn(){
+if (!countInActive) return;
+countInActive = false;
+if (countInTimer) clearTimeout(countInTimer);
+countInTimer = null;
+
+const t = countInTrackRef;
+countInTrackRef = null;
+
+setCountInUI(false, "—");
+if (t){
+t.isCountingIn = false;
+      t.isArmedRecord = false;
+updateTrackUI(t);
+}
+updateGlobalButtons();
+}
+
+  // 4 MISURE starting from BAR 0 BEAT 0
+  function startCountInThenRecord(track){
+    if (countInActive) cancelCountIn();
+
+    countInActive = true;
+    countInTrackRef = track;
+    countInBeatGlobal = 0;
+
+    track.isCountingIn = true;
+    updateTrackUI(track);
+    updateGlobalButtons();
+
+    const wasMetroOn = metroOn;
+    if (!metroOn) startMetronome();
+
+    const beatMs = beatSeconds() * 1000;
+    const beatsPerBar = getNumerator();
+    const totalBeats = countInBars * beatsPerBar;
+
+    const step = () => {
+      if (!countInActive) return;
+
+      const barIdx = Math.floor(countInBeatGlobal / beatsPerBar); // 0..3
+      const beatInBar = countInBeatGlobal % beatsPerBar;          // 0..N-1
+
+      setCountInUI(true, `COUNT BAR ${barIdx} BEAT ${beatInBar}`);
+      flashBeat(beatInBar);
+
+      countInBeatGlobal++;
+
+      if (countInBeatGlobal >= totalBeats){
+        setCountInUI(false, "—");
+        countInActive = false;
+
+        track.isCountingIn = false;
+        updateTrackUI(track);
+        updateGlobalButtons();
+
+        if (!wasMetroOn) stopMetronome();
+
+        startRecording(track);
+        return;
+      }
+
+      countInTimer = setTimeout(step, beatMs);
+    };
+
+    step();
+  function stopAllInput(){
+    if (inputStream){
+      for (const tr of inputStream.getTracks()) tr.stop();
+      inputStream = null;
+    }
+}
+
 // Input
 async function getInputStream(){
 const mode = sourceSelect.value;
@@ -561,285 +690,14 @@ video: false
 return await navigator.mediaDevices.getDisplayMedia({ audio:true, video:true });
 }
 
-function stopAllInput(){
-if (inputStream){
-for (const tr of inputStream.getTracks()) tr.stop();
-inputStream = null;
-}
-}
+  function stopAllInput(){
+    if (inputStream){
+      for (const tr of inputStream.getTracks()) tr.stop();
+      inputStream = null;
+    }
+  }
 
-// WAV export (PCM 16-bit, little-endian)
-function audioBufferToWavBlob(buffer){
-const numCh = buffer.numberOfChannels;
-const sr = buffer.sampleRate;
-const numFrames = buffer.length;
-
-// Interleave
-const interleaved = new Float32Array(numFrames * numCh);
-for (let ch=0; ch<numCh; ch++){
-const data = buffer.getChannelData(ch);
-for (let i=0; i<numFrames; i++){
-interleaved[i*numCh + ch] = data[i];
-}
-}
-
-// 16-bit PCM
-const bytesPerSample = 2;
-const blockAlign = numCh * bytesPerSample;
-const byteRate = sr * blockAlign;
-const dataSize = interleaved.length * bytesPerSample;
-const bufferSize = 44 + dataSize;
-
-const ab = new ArrayBuffer(bufferSize);
-const view = new DataView(ab);
-
-function writeStr(offset, str){
-for (let i=0; i<str.length; i++) view.setUint8(offset+i, str.charCodeAt(i));
-}
-
-// RIFF header
-writeStr(0, "RIFF");
-view.setUint32(4, 36 + dataSize, true);
-writeStr(8, "WAVE");
-
-// fmt chunk
-writeStr(12, "fmt ");
-view.setUint32(16, 16, true);          // PCM chunk size
-view.setUint16(20, 1, true);           // audio format = PCM
-view.setUint16(22, numCh, true);
-view.setUint32(24, sr, true);
-view.setUint32(28, byteRate, true);
-view.setUint16(32, blockAlign, true);
-view.setUint16(34, 16, true);          // bits per sample
-
-// data chunk
-writeStr(36, "data");
-view.setUint32(40, dataSize, true);
-
-// samples
-let offset = 44;
-for (let i=0; i<interleaved.length; i++){
-let s = interleaved[i];
-// clamp
-if (s > 1) s = 1;
-if (s < -1) s = -1;
-// scale
-const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
-view.setInt16(offset, int16, true);
-offset += 2;
-}
-
-return new Blob([ab], { type: "audio/wav" });
-}
-
-function downloadBlob(blob, filename){
-const url = URL.createObjectURL(blob);
-const a = document.createElement("a");
-a.href = url;
-a.download = filename;
-document.body.appendChild(a);
-a.click();
-a.remove();
-// revoke later to allow download to start
-setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
-function safeFileName(s){
-return String(s).replace(/[^\w\-\.]+/g, "_");
-}
-
-function trackWavName(t){
-const bpmVal = getBpm();
-const ts = getNumerator();
-const ms = t.buffer ? Math.round(t.buffer.duration*1000) : 0;
-return safeFileName(`track_${t.index+1}_${t.bars}bars_${ts}-4_${bpmVal}bpm_${ms}ms.wav`);
-}
-
-// ==== Calibration (estimate extra latency and auto-set Anticipo REC) ====
-// Idea:
-// - We schedule a short "click" at a bar boundary (downbeat) using AudioContext (sample-accurate).
-// - We record from mic with MediaRecorder starting earlier by current lead (Anticipo REC).
-// - We decode the recorded audio, detect the click position, and compute timing error vs expected.
-// - We adjust leadMs = leadMs + errorMs (clamped), so future recordings align closer to grid.
-//
-// NOTE: Works best when the device speakers are audible to the mic.
-// On some phones with echo-cancellation forced by the OS, the click may be attenuated.
-
-function setCalibStatus(txt){
-if (!calibStatus) return;
-calibStatus.textContent = txt;
-}
-
-function playCalibrationClick(atTime){
-if (!audioCtx) return;
-
-const osc = audioCtx.createOscillator();
-osc.type = "square";
-osc.frequency.value = 1200;
-
-const g = audioCtx.createGain();
-g.gain.value = 0.0001;
-
-osc.connect(g);
-g.connect(audioCtx.destination);
-
-// Fast envelope to create a tick
-const t0 = atTime;
-const t1 = atTime + 0.012;
-
-g.gain.setValueAtTime(0.0001, t0);
-g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.002);
-g.gain.exponentialRampToValueAtTime(0.0001, t1);
-
-osc.start(t0);
-osc.stop(t1 + 0.02);
-
-osc.onended = () => {
-try { osc.disconnect(); } catch {}
-try { g.disconnect(); } catch {}
-};
-}
-
-function detectClickTimeSeconds(buf){
-// Return time (seconds) of the strongest transient (first significant peak).
-// Simple robust approach:
-// 1) find global max abs
-// 2) set threshold = max * 0.35
-// 3) find first index where abs(sample) crosses threshold
-// If no crossing, return null.
-const data = buf.getChannelData(0);
-let max = 0;
-for (let i=0; i<data.length; i++){
-const a = Math.abs(data[i]);
-if (a > max) max = a;
-}
-if (max < 0.02) return null; // too quiet / not detected
-const thr = max * 0.35;
-for (let i=0; i<data.length; i++){
-if (Math.abs(data[i]) >= thr){
-return i / buf.sampleRate;
-}
-}
-return null;
-}
-
-async function runCalibration(){
-if (!audioCtx || !inputStream) return;
-
-// Prefer mic; screen capture may not include device output.
-if (sourceSelect.value !== "mic"){
-const ok = confirm("La calibrazione funziona meglio con Microfono. Vuoi continuare?");
-if (!ok) return;
-}
-
-// Stop any pending schedules / countdowns / recordings
-for (const t of tracks){
-cancelCountdown(t);
-cancelSchedule(t);
-if (t.isRecording) stopRecording(t, { autoPlay:false });
-}
-updateGlobalButtons();
-
-await audioCtx.resume();
-
-if (syncOn()) ensureGridStartArmed();
-
-// We calibrate on next bar boundary
-const desiredStartAt = syncOn()
-? nextBarTime(audioCtx.currentTime + 0.20)
-: (audioCtx.currentTime + 0.20);
-
-const lead = getLeadSeconds();
-const recorderStartAt = Math.max(audioCtx.currentTime + 0.02, desiredStartAt - lead);
-const effectiveLead = Math.max(0, desiredStartAt - recorderStartAt);
-
-// Record for 2 bars to ensure we capture the click even with large delays
-const recLen = (2 * barSeconds()) + (getExtraBeats() * beatSeconds());
-
-const stopAt = desiredStartAt + recLen;
-
-// Temporary MediaRecorder capture
-const mime = pickBestMimeType();
-setCalibStatus("arm…");
-btnCalibrate.disabled = true;
-
-let rec;
-try {
-rec = new MediaRecorder(inputStream, mime ? { mimeType: mime } : undefined);
-} catch {
-rec = new MediaRecorder(inputStream);
-}
-
-const chunks = [];
-rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
-rec.onerror = (ev) => {
-console.error(ev);
-setCalibStatus("errore recorder");
-btnCalibrate.disabled = false;
-};
-
-const now = audioCtx.currentTime;
-const startDelayMs = Math.max(0, (recorderStartAt - now) * 1000);
-const stopDelayMs  = Math.max(0, (stopAt - now) * 1000);
-
-setCalibStatus(`start in ${(startDelayMs/1000).toFixed(2)}s`);
-const startTimeout = setTimeout(() => {
-try { rec.start(250); } catch(e){ console.error(e); }
-setCalibStatus("recording… (non parlare)");
-}, startDelayMs);
-
-// schedule click exactly at desiredStartAt
-playCalibrationClick(desiredStartAt);
-
-const stopTimeout = setTimeout(() => {
-try { rec.stop(); } catch(e){ console.error(e); }
-}, stopDelayMs);
-
-rec.onstop = async () => {
-try{
-clearTimeout(startTimeout);
-clearTimeout(stopTimeout);
-
-const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
-if (blob.size < 2000){
-setCalibStatus("audio troppo piccolo");
-return;
-}
-const decoded = await blobToAudioBuffer(blob);
-const mono = mixToMonoIfNeeded(decoded);
-
-// Trim start at effectiveLead (what we *think* aligns to bar 0), then detect click
-const trimmed = sliceBuffer(mono, effectiveLead, Math.min(mono.duration, 3*barSeconds()));
-const clickT = detectClickTimeSeconds(trimmed);
-
-if (clickT == null){
-setCalibStatus("click non rilevato (alza volume)");
-return;
-}
-
-// If click appears at clickT after "0", then we are late by clickT.
-// We want click at ~0s, so increase lead by clickT.
-// If clickT negative not possible here.
-const errorMs = clickT * 1000;
-
-const currentMs = Math.max(0, parseFloat(leadMsEl.value || "0"));
-const newMs = Math.max(0, Math.min(2000, Math.round(currentMs + errorMs)));
-
-leadMsEl.value = String(newMs);
-
-setCalibStatus(`OK • +${Math.round(errorMs)}ms → lead ${newMs}ms`);
-} catch(e){
-console.error(e);
-setCalibStatus("errore calibrazione");
-} finally {
-btnCalibrate.disabled = false;
-}
-};
-}
-
-
-
-// Tracks
+  // Tracks
 function createTrack(index){
 return {
 index,
@@ -852,15 +710,7 @@ recChunks: [],
 isRecording: false,
 isPlaying: false,
 isCountingIn: false,
-isArmedRecord: false,
-
-// config
-bars: 8,
-countInBars: 4,
-
-// planned alignment
-plannedLeadSec: 0,
-plannedLenSec: 0,
+      isArmedRecord: false,
 
 loopCount: 0,
 loopTimer: null,
@@ -905,6 +755,7 @@ updateTrackUI(t);
 updateGlobalButtons();
 }
 
+  // Start playback aligned to grid start (next bar) if sync ON
 function startPlayback(t){
 if (!audioCtx || !t.buffer) return;
 
@@ -916,13 +767,14 @@ src.loop = true;
 src.loopStart = 0;
 src.loopEnd = t.buffer.duration;
 src.connect(t.gainNode);
+    src.start();
 
-let startAt = audioCtx.currentTime + 0.02;
-if (syncOn()){
-ensureGridStartArmed();
-startAt = nextBarTime(audioCtx.currentTime + 0.05);
-}
-try { src.start(startAt); } catch { src.start(); }
+    let startAt = audioCtx.currentTime + 0.02;
+    if (syncOn()){
+      ensureGridStartArmed();
+      startAt = nextBarTime(audioCtx.currentTime + 0.05);
+    }
+    try { src.start(startAt); } catch { src.start(); }
 
 t.source = src;
 t.isPlaying = true;
@@ -932,107 +784,34 @@ updateTrackUI(t);
 updateGlobalButtons();
 }
 
-function cancelCountdown(t){
-const st = countdowns.get(t.index);
-if (!st) return;
-st.active = false;
-if (st.timer) clearTimeout(st.timer);
-countdowns.delete(t.index);
-
-t.isCountingIn = false;
-t.ui.countBadge.style.display = "none";
-updateTrackUI(t);
-updateGlobalButtons();
-}
-
-function cancelSchedule(t){
-const sch = schedules.get(t.index);
-if (!sch) return;
-if (sch.startTimeout) clearTimeout(sch.startTimeout);
-if (sch.stopTimeout) clearTimeout(sch.stopTimeout);
-schedules.delete(t.index);
-
-t.isArmedRecord = false;
-updateTrackUI(t);
-updateGlobalButtons();
-}
-
 function clearTrack(t){
-cancelCountdown(t);
-cancelSchedule(t);
+if (t.isCountingIn) cancelCountIn();
+    if (t.isArmedRecord) { t.isArmedRecord = false; clearScheduledRecordTimers(); }
 if (t.isRecording) stopRecording(t, { autoPlay:false });
-
 stopPlayback(t);
 t.buffer = null;
-
 updateTrackUI(t);
 updateGlobalButtons();
 }
 
-function startCountdownThenRecord(t){
-cancelCountdown(t);
+function quantizeToFixedSeconds(buf, seconds){
+const sr = buf.sampleRate;
+const targetFrames = Math.max(1, Math.round(seconds * sr));
+const chs = buf.numberOfChannels;
+const out = audioCtx.createBuffer(chs, targetFrames, sr);
 
-const barsToCount = Math.max(0, parseInt(t.countInBars, 10) || 0);
-if (barsToCount === 0){
-      armRecordWithGrid(t);
-      armRecordWithPretime(t);
-return;
+for (let ch=0; ch<chs; ch++){
+const inData = buf.getChannelData(ch);
+const outData = out.getChannelData(ch);
+if (inData.length >= targetFrames){
+outData.set(inData.subarray(0, targetFrames));
+} else {
+outData.set(inData);
+}
+}
+return out;
 }
 
-const wasMetroOn = metroOn;
-if (!metroOn) startMetronome();
-
-t.isCountingIn = true;
-updateTrackUI(t);
-updateGlobalButtons();
-
-const state = {
-active: true,
-timer: null,
-beatGlobal: 0,
-barsToCount,
-beatsPerBar: getNumerator(),
-totalBeats: barsToCount * getNumerator(),
-wasMetroOn
-};
-countdowns.set(t.index, state);
-
-const beatMs = beatSeconds() * 1000;
-
-const step = () => {
-const st = countdowns.get(t.index);
-if (!st || !st.active) return;
-
-const barIdx = Math.floor(st.beatGlobal / st.beatsPerBar);
-const beatInBar = st.beatGlobal % st.beatsPerBar;
-
-t.ui.countBadge.textContent = `COUNT ${barIdx}:${beatInBar}`;
-t.ui.countBadge.style.display = "inline-flex";
-
-flashBeat(beatInBar);
-
-st.beatGlobal++;
-
-if (st.beatGlobal >= st.totalBeats){
-t.ui.countBadge.style.display = "none";
-t.isCountingIn = false;
-countdowns.delete(t.index);
-updateTrackUI(t);
-updateGlobalButtons();
-
-if (!st.wasMetroOn) stopMetronome();
-        armRecordWithGrid(t);
-        armRecordWithPretime(t);
-return;
-}
-
-st.timer = setTimeout(step, beatMs);
-};
-
-step();
-}
-
-// Buffer helpers
 async function blobToAudioBuffer(blob){
 const arrayBuf = await blob.arrayBuffer();
 return await audioCtx.decodeAudioData(arrayBuf);
@@ -1049,24 +828,8 @@ for (let i=0; i<d.length; i++) out[i] += d[i] / decoded.numberOfChannels;
 return mono;
 }
 
-function sliceBuffer(buf, startSec, lengthSec){
-const sr = buf.sampleRate;
-const start = Math.max(0, Math.round(startSec * sr));
-const len = Math.max(1, Math.round(lengthSec * sr));
-const end = Math.min(buf.length, start + len);
-
-const chs = buf.numberOfChannels;
-const out = audioCtx.createBuffer(chs, len, sr);
-for (let ch=0; ch<chs; ch++){
-const inData = buf.getChannelData(ch);
-const outData = out.getChannelData(ch);
-const segment = inData.subarray(start, end);
-outData.set(segment);
-}
-return out;
-}
-
-function startRecordingNow(t){
+  function startRecording(t){
+  function startRecordingNow(t){
 if (!audioCtx || !inputStream) return;
 if (!window.MediaRecorder) return alert("MediaRecorder non disponibile in questo browser.");
 if (t.isRecording) return;
@@ -1087,7 +850,7 @@ codecEl.textContent = "(fallback)";
 
 t.recorder = rec;
 t.isRecording = true;
-t.isArmedRecord = false;
+    t.isArmedRecord = false;
 
 rec.ondataavailable = (ev) => {
 if (ev.data && ev.data.size > 0) t.recChunks.push(ev.data);
@@ -1124,17 +887,31 @@ return;
 const decoded = await blobToAudioBuffer(blob);
 const mono = mixToMonoIfNeeded(decoded);
 
-const loopLen = t.plannedLenSec || (Math.max(1, t.bars) * barSeconds());
-const extraEnd = getExtraBeats() * beatSeconds();
-        const trimStart = Math.max(0, t.plannedLeadSec || 0);
-        // Trim: pretime + latency correction (Anticipo REC)
-        const trimStart = Math.max(0, (t.plannedLeadSec || 0) + getLeadSeconds());
+        const qLen = quantizeDurationSeconds(mono.duration);
+        let buf = quantizeToFixedSeconds(mono, qLen);
+        // Decide target length
+        let targetLen = computeTargetLengthSeconds(mono.duration);
 
-const trimmed = sliceBuffer(mono, trimStart, loopLen + extraEnd);
-const fixed = sliceBuffer(trimmed, 0, loopLen);
+        // If master exists, force exact master length (tight sync)
+        if (masterLoopSeconds != null) targetLen = masterLoopSeconds;
 
-t.buffer = fixed;
+        let buf = quantizeToFixedSeconds(mono, targetLen);
 
+        // If no master, set master from current settings (bars)
+if (masterLoopSeconds == null){
+          setMasterLoop(qLen);
+        } else {
+          buf = quantizeToFixedSeconds(buf, masterLoopSeconds);
+          const bars = getRecBars();
+          // In fixed mode, master bars is recBars; in ceil mode, infer from seconds
+          const inferredBars = Math.max(1, Math.round(targetLen / barSeconds()));
+          const masterBarsChosen = (getQuantMode() === "fixed") ? bars : inferredBars;
+          setMasterLoop(targetLen, masterBarsChosen);
+}
+
+t.buffer = buf;
+
+        // Auto-play aligned to grid
 if (autoPlay) startPlayback(t);
 } catch (e){
 console.error(e);
@@ -1143,9 +920,6 @@ alert("Errore decodifica audio: " + (e?.message || e));
 t.isRecording = false;
 t.recorder = null;
 t.recChunks = [];
-t.plannedLeadSec = 0;
-t.plannedLenSec = 0;
-
 updateTrackUI(t);
 updateGlobalButtons();
 }
@@ -1156,138 +930,192 @@ updateTrackUI(t);
 updateGlobalButtons();
 }
 
+  // Schedule recording: align to next bar, record for master bars (or recBars if no master)
   function armRecordWithGrid(t){
-  function armRecordWithPretime(t){
-if (!audioCtx) return;
+    if (!audioCtx) return;
 
-    // PRETIME recording:
-    // - Start recording immediately (so no missing transient due to MediaRecorder start latency)
-    // - The real loop START is the next bar boundary (grid)
-    // - When saving the buffer, we trim:
-    //      trimStart = pretime + latencyTrimMs
-    //   so buffer starts at time 0 precisely.
-    //
-    // latencyTrimMs = value from "Anticipo REC" (ms), calibrabile con "Prova inizio REC".
+    // Determine record bars: if master exists, lock to master
+    const bars = (masterBars != null) ? masterBars : getRecBars();
+    const recLen = bars * barSeconds();
 
-if (syncOn()) ensureGridStartArmed();
+    // Ensure transport start
+    if (syncOn()) ensureGridStartArmed();
 
-const bars = Math.max(1, parseInt(t.bars, 10) || 1);
-const loopLen = bars * barSeconds();
+    // Compute start time (next bar)
+    const startAt = syncOn() ? nextBarTime(audioCtx.currentTime + 0.05) : (audioCtx.currentTime + 0.05);
+    const stopAt = startAt + recLen;
 
-const desiredStartAt = syncOn()
-? nextBarTime(audioCtx.currentTime + 0.05)
-: (audioCtx.currentTime + 0.05);
+    // Mark armed
+    t.isArmedRecord = true;
+    updateTrackUI(t);
+    updateGlobalButtons();
 
-    const lead = getLeadSeconds();
-    const recorderStartAt = Math.max(audioCtx.currentTime + 0.02, desiredStartAt - lead);
-    const effectiveLead = Math.max(0, desiredStartAt - recorderStartAt);
-    // Start NOW (after minimal safety offset)
-    const startNowAt = audioCtx.currentTime + 0.02;
-
-    // Pretime (to cut away later)
-    const pretime = Math.max(0, desiredStartAt - startNowAt);
-
-const extraEnd = getExtraBeats() * beatSeconds();
-    const recorderStopAt = desiredStartAt + loopLen + extraEnd;
-    const stopAt = desiredStartAt + loopLen + extraEnd;
-
-    cancelSchedule(t);
-
-t.isArmedRecord = true;
-    t.plannedLeadSec = effectiveLead;
-    t.plannedLenSec = loopLen;
-    t.plannedLeadSec = pretime;
-    t.plannedLenSec  = loopLen;
-
-updateTrackUI(t);
-updateGlobalButtons();
-
+    // Use setTimeout to start/stop MediaRecorder close to desired times
+    // Note: MediaRecorder isn't sample-accurate; we compensate by forcing buffer to exact loop length.
     const now = audioCtx.currentTime;
-    const startDelayMs = Math.max(0, (recorderStartAt - now) * 1000);
-    const stopDelayMs  = Math.max(0, (recorderStopAt  - now) * 1000);
+    const startDelayMs = Math.max(0, (startAt - now) * 1000);
+    const stopDelayMs  = Math.max(0, (stopAt  - now) * 1000);
 
-    cancelSchedule(t);
-    startRecordingNow(t);
+    clearScheduledRecordTimers();
 
-    const startTimeout = setTimeout(() => startRecordingNow(t), startDelayMs);
-    const stopTimeout  = setTimeout(() => stopRecording(t, { autoPlay:true }), stopDelayMs);
-    const now = audioCtx.currentTime;
-    const stopDelayMs = Math.max(0, (stopAt - now) * 1000);
-    const stopTimeout = setTimeout(() => stopRecording(t, { autoPlay:true }), stopDelayMs);
+    recordStartTimeout = setTimeout(() => {
+      startRecordingNow(t);
+    }, startDelayMs);
 
-    schedules.set(t.index, { startTimeout, stopTimeout });
-    schedules.set(t.index, { startTimeout: null, stopTimeout });
+    recordStopTimeout = setTimeout(() => {
+      stopRecording(t, { autoPlay:true });
+    }, stopDelayMs);
 
-    t.ui.countBadge.textContent = `ARM • ${bars} bars`;
-    t.ui.countBadge.textContent = `REC • pre ${Math.round(pretime*1000)}ms`;
-t.ui.countBadge.style.display = "inline-flex";
-setTimeout(() => {
-if (!t.isCountingIn && !t.isRecording) t.ui.countBadge.style.display = "none";
-    }, 1200);
-    }, 1400);
-}
+    // UI helper
+    setCountInUI(true, `REC ARMED • start fra ${(startDelayMs/1000).toFixed(2)}s • durata ${bars} bars`);
+  }
 
+  // Count-in (bars) then arm record
+  function startCountInThenArmRecord(t){
+    if (countInActive) cancelCountIn();
+    countInActive = true;
+    countInTrackRef = t;
+    countInBeatGlobal = 0;
+
+    t.isCountingIn = true;
+    updateTrackUI(t);
+    updateGlobalButtons();
+
+    const barsToCount = getCountInBars();
+    if (barsToCount <= 0){
+      // No count-in -> arm immediately
+      countInActive = false;
+      t.isCountingIn = false;
+      setCountInUI(false, "—");
+      updateTrackUI(t);
+      armRecordWithGrid(t);
+      return;
+    }
+
+    const wasMetroOn = metroOn;
+    if (!metroOn) startMetronome();
+
+    const beatMs = beatSeconds() * 1000;
+    const beatsPerBar = getNumerator();
+    const totalBeats = barsToCount * beatsPerBar;
+
+    const step = () => {
+      if (!countInActive) return;
+
+      const barIdx = Math.floor(countInBeatGlobal / beatsPerBar);
+      const beatInBar = countInBeatGlobal % beatsPerBar;
+
+      setCountInUI(true, `COUNT BAR ${barIdx} BEAT ${beatInBar}`);
+      flashBeat(beatInBar);
+
+      countInBeatGlobal++;
+
+      if (countInBeatGlobal >= totalBeats){
+        setCountInUI(false, "—");
+        countInActive = false;
+
+        t.isCountingIn = false;
+        updateTrackUI(t);
+        updateGlobalButtons();
+
+        if (!wasMetroOn) stopMetronome();
+
+        armRecordWithGrid(t);
+        return;
+      }
+
+      countInTimer = setTimeout(step, beatMs);
+    };
+
+    step();
+  }
+
+// Main tap:
+  // - Track 1 first time: count-in 4 bars then REC
+  // - Tap during count-in: cancel
+  // - Empty: REC / stopREC+autoplay
+  // - With buffer: toggle stop/play
+  // - If counting-in: cancel
+  // - If armed record: cancel arming (safe)
+  // - If empty: start count-in/arm record
+  // - If has buffer: toggle play/stop (aligned)
 async function onMainTap(t){
 if (!audioCtx) return alert("Prima clicca: Attiva Audio");
 try { await audioCtx.resume(); } catch {}
 
 if (t.isCountingIn){
-cancelCountdown(t);
+cancelCountIn();
 return;
 }
-if (t.isArmedRecord){
-cancelSchedule(t);
-return;
-}
-if (!t.buffer && !t.isRecording){
-if (syncOn()) ensureGridStartArmed();
-startCountdownThenRecord(t);
-return;
-}
-if (t.isRecording){
-stopRecording(t, { autoPlay:true });
+    if (t.isArmedRecord){
+      t.isArmedRecord = false;
+      clearScheduledRecordTimers();
+      setCountInUI(false, "—");
+      updateTrackUI(t);
+      updateGlobalButtons();
+      return;
+    }
+if (countInActive) return;
+
+    if (t.index === 0 && masterLoopSeconds == null && !t.buffer && !t.isRecording){
+      startCountInThenRecord(t);
+    if (!t.buffer && !t.isRecording){
+      // First action on first track initializes grid transport
+      if (syncOn()) ensureGridStartArmed();
+      startCountInThenArmRecord(t);
 return;
 }
 
+    if (!t.buffer){
+      if (!t.isRecording) startRecording(t);
+      else stopRecording(t, { autoPlay: true });
+    if (t.isRecording){
+      // Manual stop allowed (will still quantize to master/fixed length)
+      stopRecording(t, { autoPlay:true });
+return;
+}
+
+    // has buffer
 if (t.isPlaying) stopPlayback(t);
 else startPlayback(t);
 }
 
 function updateTrackUI(t){
-const { btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn, saveBtn } = t.ui;
+const { btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn } = t.ui;
 
 if (t.isCountingIn){
 tag.textContent = "COUNT";
 tag.className = "tag count";
 dot.className = "dot rec";
-label.textContent = `count-in (${t.countInBars} bars)…`;
-} else if (t.isArmedRecord){
-tag.textContent = "ARM";
-tag.className = "tag rec";
-dot.className = "dot rec";
-label.textContent = `armed • rec ${t.bars} bars`;
+label.textContent = "count-in…";
+    } else if (t.isArmedRecord){
+      tag.textContent = "ARM";
+      tag.className = "tag rec";
+      dot.className = "dot rec";
+      label.textContent = "armed…";
 } else if (t.isRecording){
 tag.textContent = "REC";
 tag.className = "tag rec";
 dot.className = "dot rec";
-label.textContent = `registrazione… (${t.bars} bars)`;
+label.textContent = "registrazione…";
 } else if (t.isPlaying){
 tag.textContent = "PLAY";
 tag.className = "tag play";
 dot.className = "dot play";
 const lc = t.loopCount ? (" • x" + t.loopCount) : "";
-label.textContent = `in loop (${t.bars} bars)` + lc;
+label.textContent = "in loop" + lc;
 } else {
 tag.textContent = "STOP";
 tag.className = "tag stop";
 dot.className = "dot";
-label.textContent = t.buffer ? (`pronto • ${t.bars} bars • ${Math.round(t.buffer.duration*1000)}ms`) : `vuoto • ${t.bars} bars`;
+label.textContent = t.buffer ? ("pronto • " + fmtSec(t.buffer.duration)) : "vuoto";
 }
 
 const svg = btnMain.querySelector("svg");
 const path = svg.querySelector("path");
 
-if (t.isCountingIn || t.isArmedRecord){
+    if (t.isCountingIn){
+    if (t.isCountingIn || t.isArmedRecord){
 path.setAttribute("d", "M16 10a6 6 0 1 0 0 12a6 6 0 0 0 0-12Z");
 svg.style.stroke = "rgba(255,59,59,.95)";
 } else if (!t.buffer){
@@ -1308,21 +1136,23 @@ svg.style.stroke = "rgba(68,255,154,.95)";
 }
 }
 
-clearBtn.disabled = (!t.buffer && !t.isRecording && !t.isCountingIn && !t.isArmedRecord);
+    clearBtn.disabled = (!t.buffer && !t.isRecording && !t.isCountingIn);
+    clearBtn.disabled = (!t.buffer && !t.isRecording && !t.isCountingIn && !t.isArmedRecord);
 muteBtn.disabled = !t.gainNode;
-saveBtn.disabled = !t.buffer;
 
 const v = parseFloat(vol.value);
 volpct.textContent = Math.round(v*100) + "%";
 }
 
+// Long press (>3s) clears track (with confirm)
 function attachLongPress(t, btnMain){
 const start = (ev) => {
 ev.preventDefault();
 t.longPressFired = false;
 t.longPressTimer = setTimeout(() => {
 t.longPressFired = true;
-if (!t.buffer && !t.isRecording && !t.isCountingIn && !t.isArmedRecord) return;
+        if (!t.buffer && !t.isRecording && !t.isCountingIn) return;
+        if (!t.buffer && !t.isRecording && !t.isCountingIn && !t.isArmedRecord) return;
 const ok = confirm(`Cancellare traccia ${t.index+1}?`);
 if (ok) clearTrack(t);
 }, 3000);
@@ -1357,7 +1187,6 @@ el.innerHTML = `
        <div class="track-title">
          <div class="n">${t.index+1}</div>
          <div class="label" id="label">vuoto</div>
-         <span class="tag count" id="countBadge" style="display:none;"></span>
        </div>
        <div class="mini">
          <span class="dot" id="dot"></span>
@@ -1385,29 +1214,7 @@ el.innerHTML = `
        </div>
      </div>
 
-     <div class="track-settings">
-       <div class="pill">
-         <span>REC</span>
-         <select id="barsSel">
-           <option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option>
-         </select>
-         <span>bars</span>
-       </div>
-       <div class="pill">
-         <span>COUNT</span>
-         <select id="countSel">
-           <option value="0">0</option>
-           <option value="1">1</option>
-           <option value="2">2</option>
-           <option value="4" selected>4</option>
-           <option value="8">8</option>
-         </select>
-         <span>bars</span>
-       </div>
-     </div>
-
      <div class="track-actions">
-       <button class="btn" id="saveBtn">Save WAV</button>
        <button class="btn" id="muteBtn">Mute</button>
        <button class="btn" id="clearBtn">Clear</button>
      </div>
@@ -1419,24 +1226,10 @@ const label = el.querySelector("#label");
 const dot = el.querySelector("#dot");
 const vol = el.querySelector("#vol");
 const volpct = el.querySelector("#volpct");
-const saveBtn = el.querySelector("#saveBtn");
 const muteBtn = el.querySelector("#muteBtn");
 const clearBtn = el.querySelector("#clearBtn");
-const barsSel = el.querySelector("#barsSel");
-const countSel = el.querySelector("#countSel");
-const countBadge = el.querySelector("#countBadge");
 
-t.ui = { el, btnMain, tag, label, dot, vol, volpct, saveBtn, muteBtn, clearBtn, barsSel, countSel, countBadge };
-
-barsSel.addEventListener("change", () => {
-t.bars = parseInt(barsSel.value, 10);
-updateTrackUI(t);
-updateGlobalButtons();
-});
-countSel.addEventListener("change", () => {
-t.countInBars = parseInt(countSel.value, 10);
-updateTrackUI(t);
-});
+t.ui = { el, btnMain, tag, label, dot, vol, volpct, muteBtn, clearBtn };
 
 attachLongPress(t, btnMain);
 
@@ -1470,23 +1263,17 @@ const ok = confirm(`Cancellare traccia ${t.index+1}?`);
 if (ok) clearTrack(t);
 });
 
-saveBtn.addEventListener("click", () => {
-if (!t.buffer) return;
-const wav = audioBufferToWavBlob(t.buffer);
-downloadBlob(wav, trackWavName(t));
-});
-
 updateTrackUI(t);
 return el;
 }
 
 function buildUI(){
-gridEl.innerHTML = "";
+grid.innerHTML = "";
 tracks.length = 0;
 for (let i=0; i<TRACKS; i++){
 const t = createTrack(i);
 tracks.push(t);
-gridEl.appendChild(buildTrackCard(t));
+grid.appendChild(buildTrackCard(t));
 }
 updateGlobalButtons();
 }
@@ -1514,8 +1301,6 @@ setDots();
 
 btnInit.textContent = "Audio attivo";
 btnInit.disabled = true;
-if (btnCalibrate) btnCalibrate.disabled = false;
-setCalibStatus("pronto");
 updateGlobalButtons();
 }
 
@@ -1539,41 +1324,31 @@ updateGlobalButtons();
 });
 
 btnStopAll.addEventListener("click", () => {
+if (countInActive) cancelCountIn();
+    clearScheduledRecordTimers();
+    setCountInUI(false, "—");
 for (const t of tracks){
-cancelCountdown(t);
-cancelSchedule(t);
+      if (t.isArmedRecord) t.isArmedRecord = false;
 if (t.isRecording) stopRecording(t, { autoPlay:false });
 if (t.isPlaying) stopPlayback(t);
-t.ui.countBadge.style.display = "none";
+      updateTrackUI(t);
 }
 updateGlobalButtons();
 });
-
-btnCalibrate.addEventListener("click", () => { runCalibration(); });
 
 btnClearAll.addEventListener("click", () => {
 if (!confirm("Cancellare tutte le tracce?")) return;
+if (countInActive) cancelCountIn();
+    clearScheduledRecordTimers();
+    setCountInUI(false, "—");
 for (const t of tracks) clearTrack(t);
-gridStartTime = null;
+masterLoopSeconds = null;
+    masterBars = null;
+    gridStartTime = null;
+    transportArmed = false;
+masterLenEl.textContent = "—";
+    masterBarsEl.textContent = "—";
 updateGlobalButtons();
-});
-
-btnSaveAll.addEventListener("click", () => {
-const list = tracks.filter(t => !!t.buffer);
-if (!list.length) return;
-// Download sequentially with small delay (Android/Chrome can block multiple immediate downloads)
-let i = 0;
-const next = () => {
-if (i >= list.length) return;
-const t = list[i++];
-try{
-const wav = audioBufferToWavBlob(t.buffer);
-downloadBlob(wav, trackWavName(t));
-} finally {
-setTimeout(next, 700);
-}
-};
-next();
 });
 
 sourceSelect.addEventListener("change", () => {
@@ -1582,52 +1357,81 @@ alert("Hai cambiato sorgente. Ricarica la pagina per applicarla.");
 }
 });
 
+// Metronome controls
 btnMetro.addEventListener("click", () => {
 if (metroOn) stopMetronome();
 else startMetronome();
 });
 
-function onTimingChange(){
+  bpm.addEventListener("input", () => {
+  function onTimingChange(){
 bpmVal.textContent = bpm.value;
-if (mfBpm) mfBpm.textContent = bpm.value;
-if (mfSig) mfSig.textContent = tsig.value + "/4";
-updateTimingBadges();
-buildBeatLeds();
 
-for (const t of tracks){
-cancelCountdown(t);
-cancelSchedule(t);
-t.ui.countBadge.style.display = "none";
-updateTrackUI(t);
-}
-updateGlobalButtons();
+    // If count-in active, restart it from BAR 0 with new BPM (stable)
+    if (countInActive){
+      const t = countInTrackRef;
+      cancelCountIn();
+      if (t && t.index === 0 && masterLoopSeconds == null && !t.buffer && !t.isRecording){
+        startCountInThenRecord(t);
+      }
+    }
+    // Count-in stability: cancel (user can restart)
+    if (countInActive) cancelCountIn();
+    clearScheduledRecordTimers();
+    setCountInUI(false, "—");
 
+    // Restart metronome for clean LED tempo
 if (metroOn){
 stopMetronome();
 startMetronome();
 }
+  });
+
+  tsig.addEventListener("change", () => {
+    buildBeatLeds();
+    if (metroOn){
+      stopMetronome();
+      startMetronome();
+    // If master already exists, changing BPM or time signature changes the meaning of "bars".
+    // Keep audio master length as-is (seconds), but update displayed master bars as "locked".
+    if (masterLoopSeconds != null){
+      // show lock message in countInBox briefly
+      setCountInUI(true, "MASTER locked (durata in secondi) • clear all per resettare");
+      setTimeout(() => setCountInUI(false, "—"), 1400);
 }
 
-bpm.addEventListener("input", onTimingChange);
-tsig.addEventListener("change", onTimingChange);
-[syncModeSel, leadMsEl, extraBeatsSel].forEach(el => el.addEventListener("change", () => {
-for (const t of tracks){
-cancelSchedule(t);
-t.ui.countBadge.style.display = "none";
-updateTrackUI(t);
-}
-updateGlobalButtons();
-}));
+    // Rebuild LEDs when time signature changes
+    buildBeatLeds();
+  }
+
+  bpm.addEventListener("input", onTimingChange);
+  tsig.addEventListener("change", onTimingChange);
+
+  // Param changes: just cancel count-in / arming for safety
+  [countInBarsSel, recBarsSel, quantModeSel, extraBeatsSel, syncModeSel].forEach(el => {
+    el.addEventListener("change", () => {
+      if (countInActive) cancelCountIn();
+      clearScheduledRecordTimers();
+      setCountInUI(false, "—");
+      for (const t of tracks){
+        if (t.isArmedRecord){
+          t.isArmedRecord = false;
+          updateTrackUI(t);
+        }
+      }
+      updateGlobalButtons();
+    });
+});
 
 // Init UI
 buildUI();
 buildBeatLeds();
 bpmVal.textContent = bpm.value;
-if (mfBpm) mfBpm.textContent = bpm.value;
-if (mfSig) mfSig.textContent = tsig.value + "/4";
-updateTimingBadges();
-srEl.textContent = "—";
-setCalibStatus("attiva audio");
+  masterLenEl.textContent = "—";
+  masterBarsEl.textContent = "—";
+setCountInUI(false, "—");
+  srEl.textContent = "—";
+
 setInterval(() => setDots(), 500);
 })();
 </script>
