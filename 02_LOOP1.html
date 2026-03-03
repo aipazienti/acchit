@@ -110,6 +110,28 @@
     }
     .beat-num.flash{color:var(--red);}
 
+    /* ─── STICKY MINI METRO BAR ─── */
+    #stickyMetro{
+      position:fixed;top:0;left:0;right:0;z-index:500;
+      background:rgba(6,8,15,.92);
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--stroke);
+      padding:7px 16px;
+      display:flex;align-items:center;gap:10px;
+      transform:translateY(-100%);
+      transition:transform .22s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    #stickyMetro.visible{
+      transform:translateY(0);
+      pointer-events:auto;
+    }
+    #stickyMetro .metro-label{font-size:10px;}
+    #stickyMetro .led-strip{flex:1;min-width:0;}
+    #stickyMetro .led{height:14px;}
+    #stickyMetro .led-sep{height:14px;}
+    #stickyMetro .beat-num{font-size:16px;min-width:24px;}
+
     /* ─── COUNTDOWN OVERLAY (big display) ─── */
     #countdownOverlay{
       display:none;position:fixed;top:0;left:0;right:0;bottom:0;
@@ -299,6 +321,13 @@
 <body>
 
 <div class="error-toast" id="toast"></div>
+
+<!-- Sticky mini metro bar (solo LED, appare quando metro-bar esce dallo schermo) -->
+<div id="stickyMetro">
+  <span class="metro-label" style="color:var(--muted);">METRO</span>
+  <div class="led-strip" id="ledStripSticky"></div>
+  <div class="beat-num" id="beatNumSticky">—</div>
+</div>
 
 <!-- Big countdown overlay -->
 <div id="countdownOverlay">
@@ -1120,6 +1149,65 @@ setInterval(setDots,600);
 window.addEventListener("resize",()=>{for(const t of tracks)if(t.buffer)drawWaveform(t.ui.canvas,t.buffer);});
 
 buildUI();
+
+/* ═══════════════════════════════════════════════════════
+   STICKY MINI METRO — clona i LED nel bar fisso in cima
+═══════════════════════════════════════════════════════ */
+(function(){
+  const stickyBar   = document.getElementById("stickyMetro");
+  const stickyStrip = document.getElementById("ledStripSticky");
+  const stickyNum   = document.getElementById("beatNumSticky");
+  const metroBarEl  = document.querySelector(".metro-bar");
+
+  // Build a mirror of the LED strip inside the sticky bar
+  const stickyLedEls = [];
+  for(let i=0;i<LEDS;i++){
+    if(i>0&&i%4===0){
+      const sep=document.createElement("div");sep.className="led-sep";
+      stickyStrip.appendChild(sep);
+    }
+    const d=document.createElement("div");
+    const isAccent=(i%beatsPerBar===0);
+    d.className="led"+(isAccent?" beat1":"");
+    if(isAccent){
+      const n=document.createElement("div");n.className="beat-n";
+      n.textContent=(i/4+1);d.appendChild(n);
+    }
+    stickyStrip.appendChild(d);
+    stickyLedEls.push(d);
+  }
+
+  // Sync sticky LEDs whenever main setLed() is called
+  const _origSetLed = setLed;
+  setLed = function(beat, isCountdown=false){
+    _origSetLed(beat, isCountdown);
+    // Mirror state to sticky LEDs
+    stickyLedEls.forEach((l,i)=>{
+      l.classList.remove("lit","countdown");
+      if(i===beat){
+        if(isCountdown) l.classList.add("countdown");
+        else l.classList.add("lit");
+      }
+    });
+    // Mirror beat number
+    if(beat>=0){
+      stickyNum.textContent=(beat+1);
+      stickyNum.classList.add("flash");
+      clearTimeout(stickyNum._ft);
+      stickyNum._ft=setTimeout(()=>stickyNum.classList.remove("flash"),80);
+    } else {
+      stickyNum.textContent="—";stickyNum.classList.remove("flash");
+    }
+  };
+
+  // Show/hide sticky bar based on main metro bar visibility
+  const observer = new IntersectionObserver(
+    ([entry])=>{ stickyBar.classList.toggle("visible", !entry.isIntersecting); },
+    { threshold: 0, rootMargin: "0px" }
+  );
+  observer.observe(metroBarEl);
+})();
+
 </script>
 </body>
 </html>
