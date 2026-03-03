@@ -135,9 +135,12 @@
       font-family:'Share Tech Mono',monospace;font-size:13px;
       color:rgba(255,170,0,.6);letter-spacing:.15em;margin-top:4px;
     }
-    .cd-bars{display:flex;gap:4px;margin-top:8px;}
-    .cd-bar{width:10px;height:10px;border-radius:50%;background:rgba(255,170,0,.2);}
-    .cd-bar.done{background:var(--orange);}
+    .cd-bars{display:flex;gap:6px;margin-top:10px;align-items:center;}
+    .cd-bar-group{display:flex;gap:3px;}
+    .cd-bar-sep{width:1px;height:14px;background:rgba(255,170,0,.25);margin:0 2px;}
+    .cd-beat-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,170,0,.15);border:1px solid rgba(255,170,0,.25);transition:background .05s,box-shadow .05s;}
+    .cd-beat-dot.active{background:var(--orange);box-shadow:0 0 10px rgba(255,170,0,.9);border-color:var(--orange);}
+    .cd-beat-dot.done{background:rgba(255,170,0,.45);border-color:rgba(255,170,0,.5);}
 
     /* ─── GRID ─── */
     main{
@@ -228,6 +231,19 @@
       border:1px solid var(--stroke2);color:var(--muted);background:rgba(0,0,0,.2);
     }
     .ci-btn.sel{border-color:rgba(255,170,0,.5);color:var(--orange);background:rgba(255,170,0,.07);}
+
+    /* Autoplay row */
+    .autoplay-row{display:flex;align-items:center;gap:4px;margin-bottom:7px;}
+    .ap-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);white-space:nowrap;min-width:26px;}
+    .ap-btn{
+      font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:4px 6px;border-radius:7px;flex:1;justify-content:center;
+      border:1px solid var(--stroke2);color:var(--muted);background:rgba(0,0,0,.2);
+    }
+    .ap-btn.sel{
+      border-color:rgba(0,255,153,.45);color:var(--green);
+      background:rgba(0,255,153,.07);
+    }
 
     /* Vol row */
     .vol-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
@@ -517,17 +533,36 @@ function onCountdownComplete(){
 function showCountdownOverlay(total,elapsed){
   const barsTotal=Math.ceil(total/beatsPerBar);
   const barsElapsed=Math.floor(elapsed/beatsPerBar);
-  const beatsInBar=(elapsed%beatsPerBar)+1;
+  const beatInBar=(elapsed%beatsPerBar); // 0-based current beat within bar
   const barsLeft=barsTotal-barsElapsed;
 
   cdBigNum.textContent=barsLeft>0?barsLeft:"GO!";
-  cdBigLabel.textContent=barsLeft>0?`BAR ${barsElapsed+1}/${barsTotal} — BEAT ${beatsInBar}`:"REGISTRA!";
+  cdBigLabel.textContent=barsLeft>0?`BATTUTA ${barsElapsed+1}/${barsTotal} — BEAT ${beatInBar+1}`:"REGISTRA!";
 
+  // Build beat grid: 4 dots per bar, 2 bars, separated
   cdBarsEl.innerHTML="";
-  for(let i=0;i<barsTotal;i++){
-    const d=document.createElement("div");
-    d.className="cd-bar"+(i<barsElapsed?" done":"");
-    cdBarsEl.appendChild(d);
+  for(let b=0;b<barsTotal;b++){
+    if(b>0){
+      const sep=document.createElement("div");
+      sep.className="cd-bar-sep";
+      cdBarsEl.appendChild(sep);
+    }
+    const grp=document.createElement("div");
+    grp.className="cd-bar-group";
+    for(let beat=0;beat<beatsPerBar;beat++){
+      const d=document.createElement("div");
+      const globalBeat=b*beatsPerBar+beat; // 0-based from start
+      if(globalBeat<elapsed-1){
+        d.className="cd-beat-dot done";
+      } else if(globalBeat===elapsed-1){
+        // Current beat — active/pulsing
+        d.className="cd-beat-dot active";
+      } else {
+        d.className="cd-beat-dot";
+      }
+      grp.appendChild(d);
+    }
+    cdBarsEl.appendChild(grp);
   }
   countdownOverlay.classList.add("show");
 }
@@ -539,17 +574,21 @@ function hideCountdownOverlay(){
 function notifyTracksBeat(beat, audioTime){
   // Global countdown logic
   if(countdownPhase==="waiting_bar1"){
+    // Wait for beat 0 (downbeat) to START counting — don't count beat 0 itself
     if(beat===0){
       countdownPhase="counting";
       countdownBeatsElapsed=0;
+      showCountdownOverlay(countdownBeatsTotal, 0);
+      return; // Don't process recording on this beat — it's the first countdown beat
     }
   }
   if(countdownPhase==="counting"){
     countdownBeatsElapsed++;
-    const left=countdownBeatsTotal-countdownBeatsElapsed;
     showCountdownOverlay(countdownBeatsTotal, countdownBeatsElapsed);
+    const left=countdownBeatsTotal-countdownBeatsElapsed;
     if(left<=0){
       onCountdownComplete();
+      return; // Don't also count this beat into recording
     }
   }
 
@@ -761,6 +800,8 @@ function startRecordingNow(t){
         drawWaveform(t.ui.canvas,t.buffer);
         if(t.ui.recProgressBar) t.ui.recProgressBar.style.width="0%";
         clearCountinLeds(t);
+        // Auto-start playback if enabled
+        if(t.autoPlay) startPlayback(t);
       }catch(err){console.error(err);showToast("Errore decodifica: "+err.message);}
       updateTrackUI(t);updateGlobalButtons();
     };
@@ -859,6 +900,7 @@ function updateTrackUI(t){
   clearBtn.disabled=!t.buffer&&!t.isRecording&&!inCountin;
   updateBarBtns(t);
   updateCiBtns(t);
+  updateApBtns(t);
 }
 
 function updateBarBtns(t){
@@ -876,6 +918,11 @@ function updateCiBtns(t){
   t.ui.ciOff.classList.toggle("sel",!t.useCountin);
   t.ui.ciOn.classList.toggle("sel",t.useCountin);
 }
+function updateApBtns(t){
+  if(!t.ui.apOn) return;
+  t.ui.apOff.classList.toggle("sel",!t.autoPlay);
+  t.ui.apOn.classList.toggle("sel",t.autoPlay);
+}
 
 function createTrack(i){
   return{
@@ -884,6 +931,7 @@ function createTrack(i){
     isRecording:false,isPlaying:false,isMuted:false,_prevVol:0.85,
     countinArmed:false,countinActive:false,countinRemaining:0,countinBeats:0,
     useCountin:true,   // default: use 2-bar global countdown
+    autoPlay:true,     // default: auto-start playback after recording
     barsToRecord:4,    // default: 4 bars
     barsTarget:0,      // active target (0 = manual stop)
     recBeatCount:0,    // beats elapsed during recording
@@ -929,6 +977,12 @@ function buildTrackCard(t){
       <button class="ci-btn sel" id="ciOn">2🎵</button>
     </div>
 
+    <div class="autoplay-row">
+      <span class="ap-lbl">AUTO▶</span>
+      <button class="ap-btn" id="apOff">OFF</button>
+      <button class="ap-btn sel" id="apOn">▶ POST REC</button>
+    </div>
+
     <div class="vol-row">
       <span class="vol-label">VOL</span>
       <input type="range" id="vol" min="0" max="1" step="0.01" value="0.85"/>
@@ -951,11 +1005,13 @@ function buildTrackCard(t){
   const recProgressBar=el.querySelector("#rpb");
   const ciOff=el.querySelector("#ciOff");
   const ciOn=el.querySelector("#ciOn");
+  const apOff=el.querySelector("#apOff");
+  const apOn=el.querySelector("#apOn");
   const trackLeds=Array.from(el.querySelector("#tls").querySelectorAll(".t-led"));
   const barBtns=Array.from(el.querySelectorAll(".bar-btn"));
 
   t.ui={el,btnMain,stateTag,info,vol,volpct,muteBtn,clearBtn,canvas,
-        ciOff,ciOn,trackLeds,barBtns,recProgressBar};
+        ciOff,ciOn,apOff,apOn,trackLeds,barBtns,recProgressBar};
 
   // Bar buttons
   barBtns.forEach(b=>{
@@ -969,6 +1025,10 @@ function buildTrackCard(t){
   // Count-in toggle
   ciOff.addEventListener("click",()=>{t.useCountin=false;updateCiBtns(t);});
   ciOn.addEventListener("click",()=>{t.useCountin=true;updateCiBtns(t);});
+
+  // Autoplay toggle
+  apOff.addEventListener("click",()=>{t.autoPlay=false;updateApBtns(t);});
+  apOn.addEventListener("click",()=>{t.autoPlay=true;updateApBtns(t);});
 
   btnMain.addEventListener("click",()=>toggleMainButton(t));
   btnMain.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();btnMain.click();}});
