@@ -1,0 +1,1997 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Maracaloop v4</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap');
+    :root{
+      --bg:#06080f;--panel:#0c1120;--text:#dce8ff;
+      --muted:#5a6a88;--red:#ff3344;--green:#00ff99;
+      --cyan:#00cfff;--orange:#ffaa00;--purple:#a855f7;
+      --gold:#ffd700;
+      --stroke:#182040;--stroke2:#0f1830;--r:14px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Barlow',sans-serif;background:var(--bg);
+      background-image:
+        radial-gradient(ellipse 900px 500px at 15% 5%,rgba(0,80,255,.06) 0%,transparent 70%),
+        radial-gradient(ellipse 700px 500px at 85% 70%,rgba(0,200,80,.04) 0%,transparent 70%);
+      color:var(--text);min-height:100vh;}
+
+    header{max-width:1180px;margin:0 auto;padding:14px 20px 12px;
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:10px;border-bottom:1px solid var(--stroke);}
+    .logo{font-family:'Share Tech Mono',monospace;font-size:22px;letter-spacing:.18em;}
+    .logo span{color:var(--cyan);}
+    .top-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    select{font:inherit;background:var(--panel);border:1px solid var(--stroke);
+      color:var(--text);padding:8px 12px;border-radius:10px;outline:none;cursor:pointer;}
+    button{font:inherit;cursor:pointer;border:1px solid var(--stroke);
+      background:var(--panel);color:var(--text);padding:8px 14px;
+      border-radius:10px;transition:background .15s,border-color .15s,transform .06s;
+      display:inline-flex;align-items:center;gap:6px;}
+    button:active{transform:translateY(1px);}
+    button:hover:not(:disabled){background:rgba(255,255,255,.05);}
+    button:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+    .btn-init{border-color:rgba(0,207,255,.4);color:var(--cyan);}
+    .btn-play{border-color:rgba(0,255,153,.4);color:var(--green);}
+    .btn-stop{border-color:rgba(255,51,68,.3);color:#ff8090;}
+    .btn-cal{border-color:rgba(255,215,0,.4);color:var(--gold);font-size:11px;}
+
+    .statusbar{max-width:1180px;margin:0 auto;padding:9px 20px;
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .badge{font-family:'Share Tech Mono',monospace;font-size:11px;
+      padding:4px 10px;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.3);border-radius:999px;
+      display:inline-flex;align-items:center;gap:7px;color:var(--muted);}
+    .dot{width:8px;height:8px;border-radius:50%;background:#1e2a40;flex-shrink:0;}
+    .dot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+    .badge-master{border-color:rgba(255,215,0,.4);color:var(--gold);}
+    .badge-master .dot.on{background:var(--gold);box-shadow:0 0 6px var(--gold);}
+    .badge-lat{border-color:rgba(168,85,247,.3);color:var(--purple);}
+    .badge-mic{border-color:rgba(0,255,153,.25);color:var(--green);gap:8px;}
+    .mic-inline{display:inline-flex;align-items:center;gap:6px;}
+    .mic-inline input[type="range"]{width:92px;flex:unset;height:3px;}
+    .mic-inline b{min-width:40px;text-align:right;}
+    .mic-lvl{color:var(--cyan);min-width:44px;text-align:right;}
+
+    .metro-bar{max-width:1180px;margin:0 auto;
+      padding:12px 20px;border-bottom:1px solid var(--stroke);
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+    .metro-label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.1em;}
+    .led-strip{display:flex;gap:4px;align-items:center;flex:1;min-width:80px;}
+    .led{flex:1;height:20px;border-radius:5px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05);
+      transition:background .04s,box-shadow .04s;position:relative;min-width:14px;}
+    .led.beat1{border-color:rgba(255,51,68,.25);}
+    .led.lit{background:rgba(255,51,68,.9);box-shadow:0 0 10px rgba(255,51,68,.8);}
+    .led.beat1.lit{background:#ff3344;box-shadow:0 0 18px rgba(255,51,68,1);}
+    .led.countdown{background:rgba(255,170,0,.8)!important;box-shadow:0 0 10px rgba(255,170,0,.7)!important;}
+    .led .beat-n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:700;
+      color:rgba(255,255,255,.25);pointer-events:none;}
+    .led.lit .beat-n{color:rgba(255,255,255,.95);}
+    .bpm-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .bpm-wrap label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+    input[type="number"]{font:inherit;width:68px;background:var(--panel);
+      border:1px solid var(--stroke);color:var(--text);
+      padding:7px 10px;border-radius:10px;outline:none;text-align:center;}
+    .metro-toggle{font-family:'Share Tech Mono',monospace;font-size:11px;
+      padding:7px 14px;border-radius:10px;
+      border:1px solid rgba(255,51,68,.35);color:#ff8090;white-space:nowrap;}
+    .metro-toggle.active{background:rgba(255,51,68,.1);border-color:rgba(255,51,68,.6);color:var(--red);}
+    .beat-num{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;
+      color:rgba(255,255,255,.12);min-width:30px;text-align:center;}
+    .beat-num.flash{color:var(--red);}
+    .tempo-badge{font-family:'Share Tech Mono',monospace;font-size:13px;
+      padding:6px 14px;border:1px solid rgba(0,207,255,.25);
+      background:rgba(0,207,255,.06);border-radius:10px;
+      color:var(--cyan);white-space:nowrap;}
+
+    /* Sticky */
+    #stickyMetro{position:fixed;top:0;left:0;right:0;z-index:500;
+      background:rgba(6,8,15,.93);backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--stroke);padding:7px 16px;
+      display:flex;align-items:center;gap:10px;
+      transform:translateY(-100%);transition:transform .22s cubic-bezier(.4,0,.2,1);pointer-events:none;}
+    #stickyMetro.visible{transform:translateY(0);pointer-events:auto;}
+    #stickyMetro .led{height:14px;}
+    #stickyMetro .beat-num{font-size:15px;min-width:22px;}
+
+    /* Countdown overlay */
+    #countdownOverlay{display:none;position:fixed;inset:0;
+      z-index:1000;pointer-events:none;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.35);}
+    #countdownOverlay.show{display:flex;}
+    .cd-ring{width:230px;height:230px;border-radius:50%;
+      border:4px solid rgba(255,170,0,.35);background:rgba(6,8,15,.92);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      box-shadow:0 0 80px rgba(255,170,0,.2);
+      animation:cdPulse .5s ease-in-out infinite alternate;}
+    @keyframes cdPulse{from{box-shadow:0 0 40px rgba(255,170,0,.1);}to{box-shadow:0 0 100px rgba(255,170,0,.35);}}
+    .cd-number{font-family:'Share Tech Mono',monospace;font-size:90px;
+      color:var(--orange);line-height:1;text-shadow:0 0 40px rgba(255,170,0,.9);
+      transition:transform .06s,opacity .06s;}
+    .cd-number.beat-flash{transform:scale(1.12);opacity:.7;}
+    .cd-label{font-family:'Share Tech Mono',monospace;font-size:12px;
+      color:rgba(255,170,0,.65);letter-spacing:.12em;margin-top:6px;text-align:center;}
+    .cd-latinfo{font-family:'Share Tech Mono',monospace;font-size:10px;
+      color:rgba(0,207,255,.5);letter-spacing:.08em;margin-top:4px;text-align:center;}
+    .cd-bars{display:flex;gap:5px;margin-top:10px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:200px;}
+    .cd-bar-group{display:flex;gap:3px;}
+    .cd-bar-sep{width:1px;height:14px;background:rgba(255,170,0,.2);margin:0 2px;}
+    .cd-beat-dot{width:13px;height:13px;border-radius:50%;
+      background:rgba(255,170,0,.12);border:1px solid rgba(255,170,0,.2);
+      transition:background .04s,box-shadow .04s;}
+    .cd-beat-dot.active{background:var(--orange);box-shadow:0 0 10px rgba(255,170,0,.95);}
+    .cd-beat-dot.done{background:rgba(255,170,0,.4);border-color:rgba(255,170,0,.5);}
+
+    /* Overlay waveform */
+    #overlayPanel{display:none;max-width:1180px;margin:0 auto;padding:10px 20px;
+      border-bottom:1px solid var(--stroke);}
+    #overlayPanel.visible{display:block;}
+    .overlay-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+    .overlay-title{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.1em;}
+    #overlayCanvas{width:100%;height:80px;display:block;border-radius:8px;
+      background:rgba(0,0,0,.4);border:1px solid var(--stroke2);cursor:crosshair;}
+    .overlay-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;}
+    .ov-leg-item{display:flex;align-items:center;gap:4px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);}
+    .ov-leg-dot{width:8px;height:8px;border-radius:50%;}
+
+    /* Grid */
+    main{max-width:1180px;margin:0 auto;padding:16px 20px 24px;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+    @media(max-width:980px){main{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:520px){main{grid-template-columns:1fr;}}
+
+    /* Track card */
+    .track{background:var(--panel);border:1px solid var(--stroke);
+      border-radius:var(--r);padding:12px;position:relative;overflow:hidden;transition:border-color .2s;}
+    .track.is-master-track{
+      border-color:rgba(255,215,0,.6)!important;
+      background:linear-gradient(135deg,#0c1120 0%,#0f1428 100%);}
+    .track.is-master-track::before{
+      content:'★ MASTER';position:absolute;top:8px;right:8px;
+      font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;
+      color:var(--gold);opacity:.7;pointer-events:none;}
+    .track.is-rec{border-color:rgba(255,51,68,.6);}
+    .track.is-countin{border-color:rgba(255,170,0,.6);}
+    .track.is-play{border-color:rgba(0,207,255,.4);}
+    .track.has-buffer{border-color:rgba(0,255,153,.2);}
+    .track.is-muted{opacity:.65;}
+    .track-glow{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+      background:radial-gradient(circle at 50% 0%,rgba(255,51,68,.1),transparent 60%);}
+    .track.is-rec .track-glow{opacity:1;}
+    .track.is-countin .track-glow{background:radial-gradient(circle at 50% 0%,rgba(255,170,0,.1),transparent 60%);opacity:1;}
+    .track.is-play .track-glow{background:radial-gradient(circle at 50% 0%,rgba(0,207,255,.07),transparent 60%);opacity:1;}
+    .track.is-master-track .track-glow{background:radial-gradient(circle at 50% 0%,rgba(255,215,0,.07),transparent 60%);opacity:1;}
+    .track>*:not(.track-glow){position:relative;}
+
+    .track-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;}
+    .track-num{font-family:'Share Tech Mono',monospace;font-size:20px;color:rgba(255,255,255,.1);}
+    .track-num.is-t1{color:var(--gold);}
+    .track-state{font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:3px 7px;border-radius:999px;border:1px solid var(--stroke2);
+      color:var(--muted);background:rgba(0,0,0,.3);}
+    .track-state.s-rec{border-color:rgba(255,51,68,.5);color:#ff8090;}
+    .track-state.s-countin{border-color:rgba(255,170,0,.5);color:var(--orange);}
+    .track-state.s-play{border-color:rgba(0,207,255,.4);color:var(--cyan);}
+    .track-state.s-ready{border-color:rgba(0,255,153,.3);color:var(--green);}
+    .track-state.s-muted{border-color:rgba(90,106,136,.4);color:var(--muted);}
+    .track-state.s-master{border-color:rgba(255,215,0,.5);color:var(--gold);}
+    .track-state.s-wait{border-color:rgba(255,170,0,.4);color:var(--orange);}
+
+    .track-leds{display:flex;gap:2px;margin-bottom:6px;}
+    .t-led{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.04);}
+    .t-led.rec{background:var(--green);box-shadow:0 0 4px var(--green);}
+    .t-led.done{background:var(--orange);box-shadow:0 0 4px var(--orange);}
+
+    .btn-main-wrap{display:flex;justify-content:center;margin:4px 0 7px;}
+    .btn-main{width:86px;height:86px;border-radius:50%;
+      border:2px solid var(--stroke);background:rgba(0,0,0,.4);
+      position:relative;cursor:pointer;transition:border-color .2s,transform .1s;
+      display:grid;place-items:center;}
+    .btn-main:hover:not(:disabled){transform:scale(1.04);}
+    .btn-main:active:not(:disabled){transform:scale(.96);}
+    .spin-ring{position:absolute;inset:-5px;border-radius:50%;
+      border:3px solid transparent;
+      border-top-color:var(--red);border-right-color:rgba(255,51,68,.3);
+      opacity:0;transition:opacity .2s;}
+    .track.is-rec .spin-ring{opacity:1;animation:spin 1.2s linear infinite;}
+    .track.is-countin .spin-ring{border-top-color:var(--orange);border-right-color:rgba(255,170,0,.3);opacity:1;animation:spin 0.6s linear infinite;}
+    .track.is-play .spin-ring{border-top-color:var(--cyan);border-right-color:rgba(0,207,255,.3);opacity:1;animation:spin 2s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .btn-main svg{width:30px;height:30px;}
+    .track-info{font-size:10px;color:var(--muted);text-align:center;min-height:13px;margin-bottom:7px;font-family:'Share Tech Mono',monospace;}
+
+    .bars-row{display:flex;align-items:center;gap:3px;margin-bottom:6px;}
+    .bars-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);white-space:nowrap;min-width:26px;}
+    .bar-btn{font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:4px 5px;border-radius:7px;flex:1;justify-content:center;
+      border:1px solid var(--stroke2);color:var(--muted);background:rgba(0,0,0,.2);}
+    .bar-btn.sel{border-color:rgba(168,85,247,.55);color:var(--purple);background:rgba(168,85,247,.08);}
+
+    .vol-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+    .vol-label{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);min-width:22px;}
+    input[type="range"]{-webkit-appearance:none;appearance:none;
+      flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.07);outline:none;}
+    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;
+      border-radius:50%;background:rgba(255,255,255,.8);border:1px solid rgba(0,0,0,.4);cursor:pointer;}
+    .vol-pct{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);min-width:28px;text-align:right;}
+
+    .track-btns{display:flex;gap:5px;}
+    .track-btns button{flex:1;padding:6px 4px;font-size:10px;justify-content:center;border-radius:8px;}
+    .btn-muted{color:#ff8090;border-color:rgba(255,51,68,.35);background:rgba(255,51,68,.07);}
+
+    .waveform{width:100%;height:28px;display:block;border-radius:6px;background:rgba(0,0,0,.2);margin-bottom:6px;opacity:.8;}
+    .rec-progress-wrap{height:3px;border-radius:2px;background:rgba(255,255,255,.05);margin-bottom:5px;overflow:hidden;}
+    .rec-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--orange));transition:width .1s linear;}
+
+    .offset-row{display:flex;align-items:center;gap:5px;margin-bottom:6px;}
+    .offset-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);min-width:34px;}
+    .offset-val{font-size:10px;font-family:'Share Tech Mono',monospace;color:var(--cyan);flex:1;}
+    .btn-offset{font-size:9px;font-family:'Share Tech Mono',monospace;
+      padding:3px 7px;border-radius:7px;
+      border:1px solid rgba(0,207,255,.25);color:var(--cyan);background:rgba(0,207,255,.04);}
+
+    footer{max-width:1180px;margin:0 auto;padding:12px 20px 28px;
+      font-size:11px;color:var(--muted);line-height:1.8;border-top:1px solid var(--stroke);}
+    code{background:rgba(0,0,0,.35);padding:2px 6px;border-radius:6px;font-family:'Share Tech Mono',monospace;}
+
+    .error-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:rgba(255,51,68,.15);border:1px solid rgba(255,51,68,.4);
+      color:#ffaab0;padding:11px 20px;border-radius:12px;
+      font-size:13px;z-index:2000;max-width:90vw;text-align:center;display:none;}
+
+    /* Offset popup */
+    #offsetPopup{display:none;position:fixed;z-index:3000;
+      background:var(--panel);border:1px solid rgba(0,207,255,.4);
+      border-radius:14px;padding:18px;min-width:270px;
+      box-shadow:0 8px 40px rgba(0,0,0,.7);}
+    #offsetPopup.show{display:block;}
+    .popup-title{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--cyan);margin-bottom:12px;}
+    .popup-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .popup-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);min-width:64px;}
+    .popup-slider{flex:1;}
+    .popup-val{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text);min-width:48px;text-align:right;}
+    .popup-btns{display:flex;gap:8px;margin-top:12px;}
+    .popup-btns button{flex:1;padding:8px;font-size:11px;justify-content:center;border-radius:9px;}
+    .btn-apply{border-color:rgba(0,255,153,.4);color:var(--green);}
+    .btn-cancel{border-color:rgba(255,51,68,.3);color:#ff8090;}
+    .popup-close{position:absolute;top:10px;right:12px;background:none;border:none;
+      color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;}
+
+    /* Latency calibration overlay */
+    #calOverlay{display:none;position:fixed;inset:0;z-index:2000;
+      background:rgba(0,0,0,.7);align-items:center;justify-content:center;}
+    #calOverlay.show{display:flex;}
+    .cal-box{background:var(--panel);border:1px solid rgba(255,215,0,.4);
+      border-radius:16px;padding:24px;min-width:320px;text-align:center;
+      box-shadow:0 8px 60px rgba(0,0,0,.8);}
+    .cal-title{font-family:'Share Tech Mono',monospace;font-size:15px;color:var(--gold);margin-bottom:12px;}
+    .cal-info{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+    .cal-result{font-family:'Share Tech Mono',monospace;font-size:24px;color:var(--green);margin:12px 0;}
+    .cal-btns{display:flex;gap:10px;justify-content:center;margin-top:14px;}
+    @keyframes flashOrange{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+    .track.is-countin .btn-main{animation:flashOrange 0.5s ease-in-out infinite;}
+  </style>
+</head>
+<body>
+
+<div class="error-toast" id="toast"></div>
+
+<div id="stickyMetro">
+  <span class="metro-label" style="color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;">METRO</span>
+  <div class="led-strip" id="ledStripSticky"></div>
+  <div class="beat-num" id="beatNumSticky">—</div>
+</div>
+
+<div id="countdownOverlay">
+  <div class="cd-ring">
+    <div class="cd-number" id="cdBigNum">2</div>
+    <div class="cd-label" id="cdBigLabel">COUNT-IN</div>
+    <div class="cd-latinfo" id="cdLatInfo"></div>
+    <div class="cd-bars" id="cdBars"></div>
+  </div>
+</div>
+
+<!-- Latency calibration overlay -->
+<div id="calOverlay">
+  <div class="cal-box">
+    <div class="cal-title">⚡ CALIBRAZIONE LATENZA</div>
+    <div class="cal-info" id="calInfo">
+      Il sistema prova il click-loopback e, se non rilevato, usa fallback smart.<br>
+      Regola <b>MIC IN</b> in alto finché il livello dB si muove.<br>
+      La registrazione partirà <b>in anticipo</b> con trim automatico.
+    </div>
+    <div class="cal-result" id="calResult">—</div>
+    <div class="cal-btns">
+      <button class="btn-cal" id="btnCalStart">▶ Inizia Test</button>
+      <button id="btnCalClose" style="border-color:rgba(255,51,68,.3);color:#ff8090;">✕ Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Offset popup -->
+<div id="offsetPopup">
+  <button class="popup-close" id="offsetPopupClose">✕</button>
+  <div class="popup-title" id="offsetPopupTitle">OFFSET TRACCIA 01</div>
+  <div class="popup-row">
+    <span class="popup-label">OFFSET ms</span>
+    <input type="range" class="popup-slider" id="offsetSlider" min="-2000" max="2000" step="1" value="0"/>
+    <span class="popup-val" id="offsetSliderVal">0 ms</span>
+  </div>
+  <div class="popup-row">
+    <span class="popup-label">BEAT</span>
+    <input type="range" class="popup-slider" id="offsetBeatSlider" min="0" max="31" step="1" value="0"/>
+    <span class="popup-val" id="offsetBeatVal">beat 0</span>
+  </div>
+  <div class="popup-row" style="margin-bottom:0;">
+    <span class="popup-label">FINE ms</span>
+    <input type="number" id="offsetFineMs" min="-5000" max="5000" step="1" value="0" style="width:90px;font-size:12px;padding:5px 8px;"/>
+  </div>
+  <div class="popup-btns">
+    <button class="btn-apply" id="offsetApply">✓ Applica</button>
+    <button class="btn-cancel" id="offsetCancel">✕ Annulla</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">MARACA<span>LOOP</span> <span style="font-size:11px;color:var(--muted);margin-left:6px;">v4</span></div>
+  <div class="top-controls">
+    <select id="sourceSelect">
+      <option value="mic">🎙 Microfono</option>
+      <option value="screen">🖥 Schermo / Tab</option>
+    </select>
+    <button class="btn-init" id="btnInit">⚡ Attiva Audio</button>
+    <button class="btn-cal" id="btnShowCal" disabled>⏱ Latenza</button>
+    <button class="btn-play" id="btnPlayAll" disabled>▶ Play All</button>
+    <button class="btn-stop" id="btnStopAll" disabled>■ Stop All</button>
+    <button id="btnClearAll" disabled>✕ Clear All</button>
+    <button id="btnOverlay" disabled style="border-color:rgba(168,85,247,.4);color:var(--purple);">≋ Overlay</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="badge"><span class="dot" id="dotAudio"></span> Audio</span>
+  <span class="badge"><span class="dot" id="dotInput"></span> Input</span>
+  <span class="badge badge-mic">
+    MIC IN
+    <span class="mic-inline">
+      <input type="range" id="micGainSlider" min="0" max="3" step="0.01" value="1"/>
+      <b id="micGainVal">100%</b>
+      <b class="mic-lvl" id="micLevel">-∞ dB</b>
+    </span>
+  </span>
+  <span class="badge badge-master"><span class="dot" id="dotMaster"></span> Master: <b id="masterLen">—</b></span>
+  <span class="badge">SR: <b id="sr">—</b></span>
+  <span class="badge badge-lat">Lat: <b id="latDisplay">— ms</b></span>
+  <span class="tempo-badge" id="tempoDisplay">— BPM / —</span>
+</div>
+
+<div class="metro-bar" id="metroBarEl">
+  <span class="metro-label">METRO</span>
+  <div class="led-strip" id="ledStrip"></div>
+  <div class="beat-num" id="beatNum">—</div>
+  <div class="bpm-wrap">
+    <label for="bpmInput">BPM</label>
+    <input type="number" id="bpmInput" min="40" max="240" value="120" step="1"/>
+  </div>
+  <div class="bpm-wrap">
+    <label for="sigInput">SIG</label>
+    <select id="sigInput" style="width:70px;padding:7px 8px;">
+      <option value="3">3/4</option>
+      <option value="4" selected>4/4</option>
+      <option value="5">5/4</option>
+      <option value="6">6/8</option>
+      <option value="7">7/8</option>
+      <option value="9">9/8</option>
+      <option value="11">11/8</option>
+      <option value="13">13/8</option>
+    </select>
+  </div>
+  <button class="metro-toggle" id="btnMetro">▶ Start</button>
+</div>
+
+<div id="overlayPanel">
+  <div class="overlay-header">
+    <span class="overlay-title">◈ OVERLAY TRACCE</span>
+    <div class="overlay-legend" id="overlayLegend"></div>
+  </div>
+  <canvas id="overlayCanvas" height="80"></canvas>
+</div>
+
+<main id="grid"></main>
+
+<footer>
+  <b>T1 = MASTER TEMPO</b> — registra prima T1, poi le altre si agganciamo al suo downbeat. &nbsp;|&nbsp;
+  <b>Latenza</b>: usa ⏱ per calibrare il ritardo microfono. &nbsp;|&nbsp;
+  Tracce secondarie aspettano il prossimo downbeat di T1 senza count-in.
+</footer>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════
+   CONSTANTS & GLOBALS
+═══════════════════════════════════════════════════════ */
+const TRACKS = 8;
+const BAR_OPTIONS = [1,2,4,8,16];
+const TRACK_COLORS = [
+  'rgba(255,215,0,.8)',   // 0 gold  = master
+  'rgba(0,207,255,.75)',  // 1 cyan
+  'rgba(0,255,153,.75)',  // 2 green
+  'rgba(168,85,247,.75)', // 3 purple
+  'rgba(255,51,68,.75)',  // 4 red
+  'rgba(255,150,50,.75)', // 5 orange
+  'rgba(100,220,255,.75)',// 6 light cyan
+  'rgba(200,100,255,.75)',// 7 violet
+];
+
+// ── Audio state ──
+let audioCtx = null, inputStream = null, masterGain = null;
+let isInitialized = false;
+let micSourceNode = null;
+let inputGainNode = null;
+let micMeterAnalyser = null;
+let micMeterData = null;
+let micMeterTimer = null;
+let recorderWorkletReady = false;
+let recorderWorkletModuleUrl = null;
+
+// ── Latency calibration ──
+// recordingLatencyMs: how many ms BEFORE the scheduled start we begin recording,
+// and how many samples we trim from the front of the captured buffer.
+let recordingLatencyMs = 0; // updated by calibration
+
+// ── Master loop anchor ──
+// T1 is always the master. masterLoopStartAudioTime is the WebAudio time of
+// the very first sample of T1's recording. All other tracks align to it.
+let masterLoopStartAudioTime = null; // null = not yet recorded
+let masterLoopSeconds = null;
+
+// ── Metro ──
+let bpm = 120, beatsPerBar = 4;
+let metroRunning = false, currentBeat = -1;
+let nextBeatAudioTime = 0, metroSchedulerRAF = null;
+let metroAudioCtx = null;
+let metroEpoch = 0;
+const LOOK_AHEAD = 0.08, SCHEDULE_INTERVAL = 25;
+
+// ── Countdown ──
+// "waiting_t1_downbeat" = secondary track armed, waiting for next T1 downbeat
+// "counting"            = counting 2 bars (T1 only)
+// "idle"
+let countdownPhase = 'idle';
+let countdownBeatsTotal = 0, countdownBeatsElapsed = 0;
+let pendingTracksForCountdown = [];
+let t1CountinHoldFirstBeat = false;
+
+// tracks array
+const tracks = [];
+
+/* ═══════════════════════════════════════════════════════
+   METRO ENGINE
+═══════════════════════════════════════════════════════ */
+const ledStripEl  = document.getElementById('ledStrip');
+const bpmInput    = document.getElementById('bpmInput');
+const sigInput    = document.getElementById('sigInput');
+const btnMetro    = document.getElementById('btnMetro');
+const beatNumEl   = document.getElementById('beatNum');
+const tempoDisplay= document.getElementById('tempoDisplay');
+
+let ledEls = [];
+let stickyLedEls = [];
+
+function buildLedStrip(strip, arr){
+  strip.innerHTML = '';
+  arr.length = 0;
+  for(let i = 0; i < beatsPerBar; i++){
+    const d = document.createElement('div');
+    d.className = 'led' + (i === 0 ? ' beat1' : '');
+    const n = document.createElement('div'); n.className = 'beat-n';
+    n.textContent = i + 1; d.appendChild(n);
+    strip.appendChild(d);
+    arr.push(d);
+  }
+}
+
+function rebuildAllLeds(){
+  buildLedStrip(ledStripEl, ledEls);
+  if(typeof stickyRebuild === 'function') stickyRebuild();
+}
+
+function setLed(beat, isCountdown = false){
+  ledEls.forEach((l,i)=>{
+    l.classList.remove('lit','countdown');
+    if(i === beat){
+      if(isCountdown) l.classList.add('countdown');
+      else l.classList.add('lit');
+    }
+  });
+  if(beat >= 0){
+    beatNumEl.textContent = beat + 1;
+    beatNumEl.classList.add('flash');
+    clearTimeout(beatNumEl._ft);
+    beatNumEl._ft = setTimeout(()=> beatNumEl.classList.remove('flash'), 80);
+  } else {
+    beatNumEl.textContent = '—';
+    beatNumEl.classList.remove('flash');
+  }
+}
+
+function updateTempoDisplay(){
+  tempoDisplay.textContent = `${bpm} BPM / ${beatsPerBar}/4`;
+}
+
+function scheduleMetroBeat(audioTime){
+  currentBeat = (currentBeat + 1) % beatsPerBar;
+  const beat = currentBeat;
+  const epoch = metroEpoch;
+
+  // delayMs = quanto manca al beat ESATTO (può essere negativo se già passato)
+  const delayMs = Math.max(0, (audioTime - metroAudioCtx.currentTime) * 1000);
+
+  // Il display visivo (LED + countdown) scatta ESATTAMENTE sul beat
+  setTimeout(()=>{
+    if(!metroRunning || epoch !== metroEpoch) return;
+    setLed(beat, countdownPhase === 'counting');
+    notifyBeat(beat, audioTime);
+  }, delayMs);
+}
+
+function metroScheduler(){
+  if(!metroAudioCtx) return;
+  while(nextBeatAudioTime < metroAudioCtx.currentTime + LOOK_AHEAD){
+    scheduleMetroBeat(nextBeatAudioTime);
+    nextBeatAudioTime += 60 / bpm;
+  }
+  metroSchedulerRAF = setTimeout(metroScheduler, SCHEDULE_INTERVAL);
+}
+
+function startMetro(){
+  if(metroRunning) return;
+  // Usa audioCtx se già inizializzato — un solo clock elimina il problema di sincronizzazione
+  if(!metroAudioCtx) metroAudioCtx = (audioCtx && audioCtx.state !== 'closed') ? audioCtx : new (window.AudioContext||window.webkitAudioContext)();
+  metroEpoch++;
+  metroRunning = true; currentBeat = -1;
+  nextBeatAudioTime = metroAudioCtx.currentTime + 0.01;
+  metroSchedulerRAF = setTimeout(metroScheduler, 0);
+  btnMetro.textContent = '■ Stop'; btnMetro.classList.add('active');
+}
+
+function stopMetro(){
+  if(!metroRunning) return;
+  metroEpoch++;
+  clearTimeout(metroSchedulerRAF); metroSchedulerRAF = null;
+  metroRunning = false; currentBeat = -1; setLed(-1);
+  btnMetro.textContent = '▶ Start'; btnMetro.classList.remove('active');
+}
+
+function restartMetro(){
+  metroEpoch++;
+  clearTimeout(metroSchedulerRAF); metroSchedulerRAF = null;
+  currentBeat = -1;
+  if(metroAudioCtx) nextBeatAudioTime = metroAudioCtx.currentTime + 0.01;
+  metroRunning = true;
+  metroSchedulerRAF = setTimeout(metroScheduler, 0);
+  btnMetro.textContent = '■ Stop'; btnMetro.classList.add('active');
+}
+
+// After T1 recorded: snap metro so beat-0 = next T1 loop downbeat
+function snapMetroToMaster(){
+  if(!metroAudioCtx || !masterLoopStartAudioTime || !masterLoopSeconds) return;
+  metroEpoch++;
+  clearTimeout(metroSchedulerRAF); metroSchedulerRAF = null;
+  currentBeat = -1;
+  const now = metroAudioCtx.currentTime;
+  const elapsed = now - masterLoopStartAudioTime;
+  const loopN = Math.ceil(elapsed / masterLoopSeconds);
+  nextBeatAudioTime = masterLoopStartAudioTime + loopN * masterLoopSeconds;
+  metroRunning = true;
+  metroSchedulerRAF = setTimeout(metroScheduler, 0);
+}
+
+bpmInput.addEventListener('change',()=>{
+  let v = parseInt(bpmInput.value)||120;
+  v = Math.max(40, Math.min(240, v));
+  bpmInput.value = v; bpm = v; updateTempoDisplay();
+  if(metroRunning) restartMetro();
+});
+bpmInput.addEventListener('keydown', e=>{ if(e.key==='Enter') bpmInput.blur(); });
+sigInput.addEventListener('change',()=>{
+  beatsPerBar = parseInt(sigInput.value)||4;
+  updateTempoDisplay(); rebuildAllLeds();
+  if(metroRunning) restartMetro();
+});
+btnMetro.addEventListener('click',()=>{ metroRunning ? stopMetro() : startMetro(); });
+
+buildLedStrip(ledStripEl, ledEls);
+updateTempoDisplay();
+
+/* ═══════════════════════════════════════════════════════
+   COUNTDOWN / BEAT NOTIFICATION
+   ─────────────────────────────────────────────────────
+   T1 (index 0):
+     - Restart metro su beat-0, poi 2 battute di count-in
+     - Il countdown video mostra: "2" per la prima battuta,
+       "1" per la seconda, "GO!" all'ultimo beat
+     - Il numero GRANDE riflette quante BATTUTE mancano
+       prima che parta la registrazione
+     - La REC viene schedulata ANTICIPATA di recordingLatencyMs
+       così cattura i campioni giusti dal primo beat
+   
+   T2-T8:
+     - Nessun count-in. Si arma la traccia.
+     - Attende il prossimo downbeat (beat-0) del loop T1
+     - La REC parte ANTICIPATA di recordingLatencyMs
+═══════════════════════════════════════════════════════ */
+
+// Numero di battute count-in per T1 (2 battute fisse)
+const COUNTIN_BARS = 2;
+
+function armCountdown(track){
+  pendingTracksForCountdown.push(track);
+  if(countdownPhase !== 'idle') return; // già attivo
+
+  // Se audioCtx è già attivo, assicuriamoci che il metro usi lo stesso clock
+  if(audioCtx && audioCtx.state === 'running' && metroAudioCtx !== audioCtx){
+    const wasRunning = metroRunning;
+    if(wasRunning){ metroEpoch++; clearTimeout(metroSchedulerRAF); metroRunning = false; }
+    metroAudioCtx = audioCtx;
+    if(wasRunning){
+      metroRunning = true; currentBeat = -1;
+      nextBeatAudioTime = metroAudioCtx.currentTime + 0.01;
+      metroSchedulerRAF = setTimeout(metroScheduler, 0);
+    }
+  }
+
+  const isT1 = (track.index === 0);
+  if(isT1){
+    // T1: ripartiamo dal beat-0 subito per avere un conteggio pulito
+    countdownPhase = 'counting';
+    countdownBeatsTotal = COUNTIN_BARS * beatsPerBar;
+    countdownBeatsElapsed = 0;
+    t1CountinHoldFirstBeat = false;
+    if(!metroRunning) startMetro();
+    else restartMetro(); // riparti dal beat-0
+    // Il primo beat arriverà via notifyBeat → mostriamo "attendi…" per <1 beat
+    showCountdownOverlay(0, 'COUNT-IN');
+  } else {
+    // Traccia secondaria: aspetta il prossimo downbeat T1
+    countdownPhase = 'waiting_t1_downbeat';
+    countdownBeatsTotal = 0;
+    if(!metroRunning) startMetro();
+    showCountdownOverlay(0, masterLoopSeconds ? 'Aspetta downbeat T1…' : 'Attiva T1 prima!');
+  }
+}
+
+function cancelCountdown(){
+  countdownPhase = 'idle';
+  pendingTracksForCountdown = [];
+  t1CountinHoldFirstBeat = false;
+  hideCountdownOverlay();
+}
+
+/* fireRecording: avvia la registrazione ANTICIPATA di recordingLatencyMs
+   in modo che i campioni del vero beat-0 siano catturati correttamente.
+   recStartAudioTime = momento ESATTO (WebAudio clock) del downbeat di inizio.
+*/
+function fireRecording(recStartAudioTime){
+  countdownPhase = 'done';
+  hideCountdownOverlay(); // sparisce subito, niente GO!
+
+  for(const t of pendingTracksForCountdown){
+    t.countinArmed = false;
+    startRecordingNow(t, recStartAudioTime);
+  }
+  pendingTracksForCountdown = [];
+  setTimeout(()=>{ if(countdownPhase === 'done') countdownPhase = 'idle'; }, 100);
+}
+
+let lastBeatAudioTime = 0;
+
+function notifyBeat(beat, audioTime){
+  lastBeatAudioTime = audioTime;
+  const beatSec = 60 / bpm;
+  // nextBeatTimeAudio è nel clock di metroAudioCtx
+  const nextBeatTimeAudio = audioTime + beatSec;
+
+  // ── State machine countdown ──
+  if(countdownPhase === 'waiting_t1_downbeat'){
+    if(beat === 0){
+      const hasT1 = pendingTracksForCountdown.some(t => t.index === 0);
+      if(hasT1){
+        countdownPhase = 'counting';
+        countdownBeatsElapsed = 0;
+        countdownBeatsTotal = COUNTIN_BARS * beatsPerBar;
+        showCountdownOverlay(0, 'COUNT-IN');
+      } else {
+        // beat-0 del master: REC parte adesso (audioTime = questo beat nel metro clock)
+        fireRecording(audioTime);
+      }
+    } else if(!pendingTracksForCountdown.some(t => t.index === 0) && masterLoopSeconds === null){
+      cancelAllSecondaryArmed();
+      showToast('Registra prima T1 (Master)!');
+    }
+  } else if(countdownPhase === 'counting'){
+    countdownBeatsElapsed++;
+    showCountdownOverlay(countdownBeatsElapsed);
+
+    if(countdownBeatsElapsed >= countdownBeatsTotal){
+      // Questo è l'ultimo beat del count-in.
+      // L'overlay mostra già "● REC" e sparisce subito.
+      // La REC parte sul prossimo beat (nextBeatTimeAudio) = beat-0 del loop.
+      fireRecording(nextBeatTimeAudio);
+    }
+  }
+
+  // ── Auto-stop registrazione ──
+  // Il beat-0 della REC non viene contato (è l'inizio, non la fine di un beat).
+  // Contiamo solo i beat che si completano DOPO l'inizio.
+  // Lo stop avviene sul beat che segue l'ultimo beat del loop
+  // (= beat totalBeats+1 da recStart), così l'ultimo beat è registrato per intero.
+  for(const t of tracks){
+    if(!t.isRecording || t.barsTarget <= 0) continue;
+    // Salta il beat-0 di inizio REC (audioTime ≈ recStartAudioTime)
+    const beatsSinceStart = Math.round((audioTime - t.recStartAudioTime) / (60 / bpm));
+    if(beatsSinceStart <= 0) continue;
+    t.recBeatCount = beatsSinceStart;
+    const totalBeats = t.barsTarget * beatsPerBar;
+    updateRecProgress(t, t.recBeatCount / totalBeats);
+    if(t.recBeatCount >= totalBeats){
+      t.barsTarget = 0;
+      stopRecording(t);
+    }
+  }
+}
+
+function cancelAllSecondaryArmed(){
+  for(const t of [...pendingTracksForCountdown]){
+    if(t.index !== 0){ t.countinArmed = false; updateTrackUI(t); }
+  }
+  pendingTracksForCountdown = pendingTracksForCountdown.filter(t => t.index === 0);
+  if(pendingTracksForCountdown.length === 0) cancelCountdown();
+}
+
+/* ── Countdown overlay display ── */
+const countdownOverlayEl = document.getElementById('countdownOverlay');
+const cdBigNum  = document.getElementById('cdBigNum');
+const cdBigLabel = document.getElementById('cdBigLabel');
+const cdLatInfo  = document.getElementById('cdLatInfo');
+const cdBarsEl  = document.getElementById('cdBars');
+
+function _flashCdNumber(){
+  cdBigNum.classList.remove('beat-flash');
+  void cdBigNum.offsetWidth; // reflow per restart animation
+  cdBigNum.classList.add('beat-flash');
+  setTimeout(()=> cdBigNum.classList.remove('beat-flash'), 180);
+}
+
+function showCountdownOverlay(elapsed, extraLabel){
+  const total = countdownBeatsTotal;
+  const barsTotal = total > 0 ? COUNTIN_BARS : 0;
+
+  if(total === 0 || elapsed === 0){
+    cdBigNum.textContent = '…';
+    cdBigLabel.textContent = extraLabel || 'in attesa…';
+    cdLatInfo.textContent = '';
+    cdBarsEl.innerHTML = '';
+  } else {
+    const beatsLeft = total - elapsed;
+    // Battuta corrente (0-based) = quale battuta stiamo suonando ora
+    const barNow    = Math.floor((elapsed - 1) / beatsPerBar) + 1;  // 1-based
+    const beatInBar = ((elapsed - 1) % beatsPerBar) + 1;            // 1-based
+    // Battute mancanti = battute che verranno DOPO la battuta corrente
+    // Cambiano numero all'inizio di ogni nuova battuta (beat 1 di ogni bar)
+    const barsLeft  = barsTotal - barNow + 1;  // include la battuta corrente
+
+    // Ultimo beat del count-in (elapsed === total): mostra ● REC
+    if(elapsed >= total){
+      cdBigNum.textContent = '●';
+      cdBigLabel.textContent = 'REC';
+      cdLatInfo.textContent = '';
+    } else {
+      cdBigNum.textContent = String(barsLeft);
+      cdBigLabel.textContent = `BAR ${barNow}/${barsTotal} · BEAT ${beatInBar}`;
+      cdLatInfo.textContent  = '';
+      _flashCdNumber();
+    }
+
+    // Punti beat
+    cdBarsEl.innerHTML = '';
+    for(let b = 0; b < barsTotal; b++){
+      if(b > 0){ const s=document.createElement('div');s.className='cd-bar-sep';cdBarsEl.appendChild(s); }
+      const grp=document.createElement('div');grp.className='cd-bar-group';
+      for(let bt=0;bt<beatsPerBar;bt++){
+        const d=document.createElement('div');
+        const gb = b * beatsPerBar + bt;
+        d.className = gb < elapsed-1  ? 'cd-beat-dot done'
+                    : gb === elapsed-1 ? 'cd-beat-dot active'
+                    : 'cd-beat-dot';
+        grp.appendChild(d);
+      }
+      cdBarsEl.appendChild(grp);
+    }
+  }
+  countdownOverlayEl.classList.add('show');
+}
+function hideCountdownOverlay(){ countdownOverlayEl.classList.remove('show'); }
+
+/* ═══════════════════════════════════════════════════════
+   LATENCY CALIBRATION
+   Emits a short click, records from mic, finds the peak
+   (= moment mic received the click). The difference is
+   round-trip latency. We use half as the output→mic delay.
+═══════════════════════════════════════════════════════ */
+const calOverlayEl = document.getElementById('calOverlay');
+const calInfoEl    = document.getElementById('calInfo');
+const calResultEl  = document.getElementById('calResult');
+const btnCalStart  = document.getElementById('btnCalStart');
+const btnCalClose  = document.getElementById('btnCalClose');
+const latDisplayEl = document.getElementById('latDisplay');
+const micGainSliderEl = document.getElementById('micGainSlider');
+const micGainValEl = document.getElementById('micGainVal');
+const micLevelEl = document.getElementById('micLevel');
+
+function setMicGainUI(g){
+  const gain = Math.max(0, Math.min(3, Number.isFinite(g) ? g : 1));
+  micGainSliderEl.value = gain.toFixed(2);
+  micGainValEl.textContent = Math.round(gain * 100) + '%';
+}
+
+function setMicGain(g){
+  const gain = Math.max(0, Math.min(3, Number.isFinite(g) ? g : 1));
+  if(inputGainNode && audioCtx){
+    inputGainNode.gain.setTargetAtTime(gain, audioCtx.currentTime, 0.01);
+  }
+  setMicGainUI(gain);
+}
+
+function startMicMeter(){
+  if(!audioCtx || !inputGainNode) return;
+  if(micMeterTimer){ clearInterval(micMeterTimer); micMeterTimer = null; }
+  micMeterAnalyser = audioCtx.createAnalyser();
+  micMeterAnalyser.fftSize = 1024;
+  micMeterData = new Float32Array(micMeterAnalyser.fftSize);
+  inputGainNode.connect(micMeterAnalyser);
+
+  micMeterTimer = setInterval(()=>{
+    if(!micMeterAnalyser || !micMeterData) return;
+    micMeterAnalyser.getFloatTimeDomainData(micMeterData);
+    let sumSq = 0;
+    for(let i = 0; i < micMeterData.length; i++) sumSq += micMeterData[i] * micMeterData[i];
+    const rms = Math.sqrt(sumSq / micMeterData.length);
+    if(rms < 1e-6){ micLevelEl.textContent = '-∞ dB'; return; }
+    const db = 20 * Math.log10(rms);
+    micLevelEl.textContent = db.toFixed(1) + ' dB';
+  }, 120);
+}
+
+function stopMicMeter(){
+  if(micMeterTimer){ clearInterval(micMeterTimer); micMeterTimer = null; }
+  if(inputGainNode && micMeterAnalyser){
+    try{ inputGainNode.disconnect(micMeterAnalyser); }catch{}
+  }
+  micMeterAnalyser = null;
+  micMeterData = null;
+  micLevelEl.textContent = '-∞ dB';
+}
+
+async function captureInputSamples(ctx, durationSec){
+  const sr = ctx.sampleRate;
+  const capSamples = Math.ceil(sr * durationSec);
+  const captured = new Float32Array(capSamples);
+  let capIdx = 0;
+  const tapSource = inputGainNode || micSourceNode || ctx.createMediaStreamSource(inputStream);
+  const proc = ctx.createScriptProcessor(512, 1, 1);
+  const silent = ctx.createGain();
+  silent.gain.value = 0;
+  proc.connect(silent);
+  silent.connect(ctx.destination);
+  tapSource.connect(proc);
+
+  proc.onaudioprocess = (e)=>{
+    if(capIdx >= capSamples) return;
+    const inp = e.inputBuffer.getChannelData(0);
+    for(let i = 0; i < inp.length && capIdx < capSamples; i++) captured[capIdx++] = inp[i];
+  };
+
+  await new Promise(res=>setTimeout(res, durationSec * 1000 + 140));
+  try{ tapSource.disconnect(proc); }catch{}
+  try{ proc.disconnect(); }catch{}
+  try{ silent.disconnect(); }catch{}
+  return captured;
+}
+
+document.getElementById('btnShowCal').addEventListener('click',()=>{ calOverlayEl.classList.add('show'); });
+btnCalClose.addEventListener('click',()=>{ calOverlayEl.classList.remove('show'); });
+setMicGainUI(1);
+micGainSliderEl.addEventListener('input', ()=>{
+  setMicGain(parseFloat(micGainSliderEl.value));
+});
+
+btnCalStart.addEventListener('click', async ()=>{
+  if(!isInitialized){ showToast('Prima attiva l\'audio!'); return; }
+  btnCalStart.disabled = true;
+  calInfoEl.innerHTML = '⏳ Eseguo 3 test. Se il click non viene rilevato, usa voce/clap durante il test.';
+  calResultEl.textContent = '…';
+
+  try{
+    const sr = audioCtx.sampleRate;
+    const RUNS = 3;
+    const latencies = [];
+    const engineMs = Math.round(((audioCtx.baseLatency || 0) + (audioCtx.outputLatency || 0)) * 1000);
+
+    for(let run = 0; run < RUNS; run++){
+      calResultEl.textContent = `Test ${run+1}/${RUNS}…`;
+      const clickDelay = 0.20;
+      const clickTime  = audioCtx.currentTime + clickDelay;
+      const clickDur   = 0.012;
+
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+      oscGain.gain.setValueAtTime(0,   clickTime);
+      oscGain.gain.linearRampToValueAtTime(1.0, clickTime + 0.0015);
+      oscGain.gain.setValueAtTime(1.0, clickTime + clickDur);
+      oscGain.gain.linearRampToValueAtTime(0,   clickTime + clickDur + 0.003);
+      osc.frequency.value = 1250;
+      osc.connect(oscGain);
+      oscGain.connect(masterGain);
+      osc.start(clickTime);
+      osc.stop(clickTime + clickDur + 0.06);
+
+      const recDur = 1.0;
+      const captureStartAudioTime = audioCtx.currentTime;
+      const captured = await captureInputSamples(audioCtx, recDur);
+      const capSamples = captured.length;
+      const noiseWindow = Math.min(Math.round(0.2 * sr), capSamples);
+      let sumSq = 0;
+      for(let i = 0; i < noiseWindow; i++) sumSq += captured[i] * captured[i];
+      const noiseRms = Math.sqrt(sumSq / Math.max(1, noiseWindow));
+      const threshold = Math.max(0.0035, noiseRms * 5.5);
+      const clickSampleInBuf = Math.max(0, Math.round((clickTime - captureStartAudioTime) * sr));
+      const searchEnd = Math.min(capSamples, clickSampleInBuf + Math.round(0.4 * sr));
+      let peakIdx = -1;
+      for(let i = clickSampleInBuf; i < searchEnd; i++){
+        if(Math.abs(captured[i]) > threshold){ peakIdx = i; break; }
+      }
+
+      const dbgRms = noiseRms.toFixed(5);
+      const dbgThr = threshold.toFixed(5);
+
+      if(peakIdx < 0){
+        calInfoEl.innerHTML = `⚠ Run ${run+1}: click non rilevato (RMS ${dbgRms}, soglia ${dbgThr}).<br>
+          Prova a parlare o fare clap durante il test.`;
+        await new Promise(res => setTimeout(res, 400));
+        continue;
+      }
+
+      const roundTripSamples = peakIdx - clickSampleInBuf;
+      const latMs = Math.max(0, Math.round((roundTripSamples / sr) * 1000));
+      latencies.push(latMs);
+
+      calInfoEl.innerHTML = `✓ Run ${run+1}: ${latMs}ms  (RMS: ${dbgRms}, soglia: ${dbgThr})`;
+      await new Promise(res => setTimeout(res, 300));
+    }
+
+    if(latencies.length === 0){
+      const fallbackMs = Math.max(18, engineMs + 24);
+      recordingLatencyMs = fallbackMs;
+      calResultEl.textContent = fallbackMs + ' ms';
+      latDisplayEl.textContent = fallbackMs + ' ms';
+      calInfoEl.innerHTML = `⚠ Click non rilevato: applico compensazione smart di sicurezza.<br>
+        Engine: ${engineMs}ms · Compensazione: <b>${fallbackMs}ms</b>.<br>
+        La registrazione resta operativa anche senza loopback altoparlante.`;
+    } else {
+      latencies.sort((a,b)=>a-b);
+      const median = latencies[Math.floor(latencies.length / 2)];
+      recordingLatencyMs = median + engineMs;
+      calResultEl.textContent = recordingLatencyMs + ' ms';
+      latDisplayEl.textContent = recordingLatencyMs + ' ms';
+      calInfoEl.innerHTML = `✓ Misurazioni: ${latencies.join(', ')} ms<br>
+        Mediana usata: <b>${median} ms</b> + engine <b>${engineMs} ms</b><br>
+        Compensazione finale: <b>${recordingLatencyMs} ms</b>.`;
+    }
+  } catch(err){
+    calInfoEl.textContent = 'Errore: ' + (err?.message || err);
+    console.error('CAL ERROR', err);
+  }
+  btnCalStart.disabled = false;
+});
+
+/* ═══════════════════════════════════════════════════════
+   PCM RECORDER — raw float32, no MediaRecorder/decode
+   
+   LATENCY COMPENSATION:
+   - recorder.start() is called EARLY by latencyMs
+   - recorder.stop(trimSamples) trims the early-captured
+     silence from the front of the buffer
+═══════════════════════════════════════════════════════ */
+function createPCMRecorder(ctx){
+  const tapSource = inputGainNode || micSourceNode || ctx.createMediaStreamSource(inputStream);
+  const buildBuffer = (chunks, trimMs = 0)=>{
+    const sr = ctx.sampleRate;
+    const totalSamples = chunks.reduce((s,c)=>s+c.length, 0);
+    const all = new Float32Array(totalSamples);
+    let pos = 0;
+    for(const c of chunks){ all.set(c, pos); pos += c.length; }
+    const trimSamples = Math.max(0, Math.round((trimMs / 1000) * sr));
+    const sliced = all.subarray(Math.min(trimSamples, totalSamples));
+    const out = ctx.createBuffer(1, Math.max(1, sliced.length), sr);
+    out.getChannelData(0).set(sliced);
+    return out;
+  };
+
+  if(recorderWorkletReady && tapSource && ctx.audioWorklet){
+    const node = new AudioWorkletNode(ctx, 'pcm-recorder-worklet');
+    const sink = ctx.createGain();
+    sink.gain.value = 0;
+    node.connect(sink);
+    sink.connect(ctx.destination);
+    tapSource.connect(node);
+
+    const chunks = [];
+    let active = false;
+    node.port.onmessage = (e)=>{
+      if(!active || !e?.data) return;
+      chunks.push(new Float32Array(e.data));
+    };
+
+    const cleanup = ()=>{
+      try{ tapSource.disconnect(node); }catch{}
+      try{ node.disconnect(); }catch{}
+      try{ sink.disconnect(); }catch{}
+    };
+
+    return {
+      start(){ chunks.length = 0; active = true; },
+      stop(trimMs = 0){ active = false; cleanup(); return buildBuffer(chunks, trimMs); },
+      abort(){ active = false; cleanup(); }
+    };
+  }
+
+  const BUF = 1024;
+  const proc = ctx.createScriptProcessor(BUF, 2, 2);
+  const silentGain = ctx.createGain();
+  silentGain.gain.value = 0;
+  silentGain.connect(ctx.destination);
+  tapSource.connect(proc);
+  proc.connect(silentGain);
+
+  const chunks = [];
+  let active = false;
+  proc.onaudioprocess = (e)=>{
+    if(!active) return;
+    const L = e.inputBuffer.getChannelData(0);
+    const R = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : null;
+    const mixed = new Float32Array(L.length);
+    for(let i = 0; i < L.length; i++) mixed[i] = R ? (L[i] + R[i]) * 0.5 : L[i];
+    chunks.push(mixed.slice());
+  };
+
+  const cleanup = ()=>{
+    try{ tapSource.disconnect(proc); }catch{}
+    try{ proc.disconnect(); }catch{}
+    try{ silentGain.disconnect(); }catch{}
+  };
+
+  return {
+    start(){ chunks.length = 0; active = true; },
+    stop(trimMs = 0){ active = false; cleanup(); return buildBuffer(chunks, trimMs); },
+    abort(){ active = false; cleanup(); }
+  };
+}
+
+async function ensureRecorderWorklet(ctx){
+  if(recorderWorkletReady || !ctx?.audioWorklet) return;
+  const code = `
+class PCMRecorderWorklet extends AudioWorkletProcessor{
+  process(inputs){
+    const input = inputs[0];
+    if(input && input[0] && input[0].length){
+      this.port.postMessage(input[0]);
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-recorder-worklet', PCMRecorderWorklet);
+`;
+  try{
+    recorderWorkletModuleUrl = URL.createObjectURL(new Blob([code], {type:'application/javascript'}));
+    await ctx.audioWorklet.addModule(recorderWorkletModuleUrl);
+    recorderWorkletReady = true;
+    return;
+  } catch(err){
+    console.warn('Worklet blob load failed, fallback to data URL', err);
+  }
+  try{
+    const dataUrl = 'data:application/javascript;charset=utf-8,' + encodeURIComponent(code);
+    await ctx.audioWorklet.addModule(dataUrl);
+    recorderWorkletReady = true;
+    return;
+  } catch(err){
+    recorderWorkletReady = false;
+    console.warn('Worklet unavailable, using ScriptProcessor fallback', err);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   AUDIO HELPERS
+═══════════════════════════════════════════════════════ */
+function fmtSec(s){ return (s==null||!isFinite(s)) ? '—' : s < 10 ? s.toFixed(2)+'s' : s.toFixed(1)+'s'; }
+function fmtMs(ms){ return Math.round(ms) + ' ms'; }
+
+function setDots(){
+  document.getElementById('dotAudio').className = 'dot' + (audioCtx && audioCtx.state==='running' ? ' on' : '');
+  document.getElementById('dotInput').className = 'dot' + (inputGainNode ? ' on' : (inputStream ? ' on' : ''));
+  document.getElementById('dotMaster').className = 'dot' + (masterLoopSeconds !== null ? ' on' : '');
+}
+
+function setMasterAnchor(sec, startAudioTime){
+  masterLoopSeconds = sec;
+  masterLoopStartAudioTime = startAudioTime;
+  document.getElementById('masterLen').textContent = fmtSec(sec);
+}
+
+function updateGlobalButtons(){
+  const anyBuf = tracks.some(t=>!!t.buffer);
+  const anyPlay = tracks.some(t=>t.isPlaying);
+  document.getElementById('btnPlayAll').disabled = !isInitialized || !anyBuf;
+  document.getElementById('btnStopAll').disabled = !isInitialized || !anyPlay;
+  document.getElementById('btnClearAll').disabled = !isInitialized || !anyBuf;
+  document.getElementById('btnOverlay').disabled = !anyBuf;
+}
+
+// Quantize buffer alla lunghezza esatta del master loop (trim o zero-pad)
+// Usa ms→campioni per evitare drift floating point
+function quantizeToMaster(buf){
+  if(!masterLoopSeconds) return buf;
+  const sr = buf.sampleRate;
+  const targetMs = Math.round(masterLoopSeconds * 1000);
+  const target = Math.round((targetMs / 1000) * sr);
+  const out = audioCtx.createBuffer(1, target, sr);
+  const src = buf.getChannelData(0);
+  const dst = out.getChannelData(0);
+  dst.set(src.subarray(0, Math.min(src.length, target)));
+  return out;
+}
+
+// For tracks longer than master (e.g. T2=16 bars on T1=2 bars),
+// we DON'T quantize — we just keep the full buffer and loop it independently.
+function processSecondaryBuffer(buf, t){
+  const masterBars = masterLoopSeconds ? masterLoopSeconds / barDuration() : 0;
+  const thisBars = t.barsToRecord;
+  if(Math.abs(thisBars - masterBars) < 0.01){
+    return quantizeToMaster(buf);
+  }
+  // Lunghezza esatta in campioni calcolata da ms per evitare drift float
+  const sr = buf.sampleRate;
+  const targetMs = barsToMs(thisBars);
+  const target = Math.round((targetMs / 1000) * sr);
+  const out = audioCtx.createBuffer(1, target, sr);
+  const src = buf.getChannelData(0);
+  out.getChannelData(0).set(src.subarray(0, Math.min(src.length, target)));
+  return out;
+}
+
+// Durata di una singola battuta in MILLISECONDI (intero preciso)
+// Formula: (60000 / BPM) * beatsPerBar
+// Es: 120 BPM, 7/4 → (60000/120)*7 = 500*7 = 3500 ms
+function barDurationMs(){ return Math.round(60000 / bpm) * beatsPerBar; }
+function barDuration(){ return barDurationMs() / 1000; }
+function barsToMs(bars){ return barDurationMs() * bars; }
+function barsToSeconds(bars){ return barsToMs(bars) / 1000; }
+
+/* ── waveform ── */
+function drawWaveform(canvas, audioBuffer, color){
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth * devicePixelRatio;
+  const H = canvas.height = canvas.offsetHeight * devicePixelRatio;
+  ctx.clearRect(0,0,W,H);
+  if(!audioBuffer) return;
+  const data = audioBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / W), mid = H / 2;
+  ctx.strokeStyle = color || 'rgba(0,207,255,.7)'; ctx.lineWidth = 1; ctx.beginPath();
+  for(let x = 0; x < W; x++){
+    let mn=1, mx=-1;
+    for(let j=0;j<step;j++){ const v=data[x*step+j]||0; if(v<mn)mn=v; if(v>mx)mx=v; }
+    ctx.moveTo(x, mid+mn*mid*.9); ctx.lineTo(x, mid+mx*mid*.9);
+  }
+  ctx.stroke();
+}
+
+/* ── overlay ── */
+let overlayVisible = false;
+const overlayPanelEl = document.getElementById('overlayPanel');
+const overlayCanvasEl = document.getElementById('overlayCanvas');
+
+function drawOverlay(){
+  const canvas = overlayCanvasEl;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth * devicePixelRatio;
+  const H = canvas.height = canvas.offsetHeight * devicePixelRatio;
+  ctx.clearRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,.03)'; ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ ctx.beginPath();ctx.moveTo(0,H*i/4);ctx.lineTo(W,H*i/4);ctx.stroke(); }
+  const maxDur = masterLoopSeconds || tracks.reduce((mx,t)=>Math.max(mx,t.buffer?.duration||0),0) || 1;
+  // Beat markers
+  if(masterLoopSeconds){
+    ctx.strokeStyle='rgba(255,215,0,.1)'; ctx.lineWidth=1;
+    const beatSec = 60/bpm;
+    const n = Math.round(maxDur/beatSec);
+    for(let i=0;i<=n;i++){ const x=W*i/n; ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  }
+  const legendItems = [];
+  for(const t of tracks){
+    if(!t.buffer) continue;
+    const color = TRACK_COLORS[t.index];
+    const offsetSec = t.offsetMs / 1000;
+    const startFrac = ((offsetSec % maxDur) + maxDur) % maxDur / maxDur;
+    const durFrac = Math.min(t.buffer.duration / maxDur, 1);
+    const xStart = Math.round(startFrac * W);
+    const xEnd = Math.round((startFrac + durFrac) * W);
+    const data = t.buffer.getChannelData(0);
+    const step = Math.max(1, Math.ceil(data.length / (xEnd - xStart || 1)));
+    const mid = H/2;
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.globalAlpha=t.isMuted?0.2:0.75; ctx.beginPath();
+    for(let x=xStart;x<Math.min(xEnd,W);x++){
+      const si=(x-xStart)*step; let mn=1,mx=-1;
+      for(let j=0;j<step;j++){const v=data[si+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
+      ctx.moveTo(x,mid+mn*mid*.85); ctx.lineTo(x,mid+mx*mid*.85);
+    }
+    ctx.stroke(); ctx.globalAlpha=1;
+    legendItems.push({index:t.index, color, muted:t.isMuted});
+  }
+  document.getElementById('overlayLegend').innerHTML = legendItems.map(l=>
+    `<div class="ov-leg-item" style="opacity:${l.muted?.3:1}">
+      <div class="ov-leg-dot" style="background:${l.color}"></div>T${String(l.index+1).padStart(2,'0')}
+    </div>`
+  ).join('');
+}
+
+document.getElementById('btnOverlay').addEventListener('click',()=>{
+  overlayVisible = !overlayVisible;
+  overlayPanelEl.classList.toggle('visible', overlayVisible);
+  if(overlayVisible) drawOverlay();
+});
+
+overlayCanvasEl.addEventListener('click', (e)=>{
+  if(!masterLoopSeconds) return;
+  const rect = overlayCanvasEl.getBoundingClientRect();
+  const xFrac = (e.clientX - rect.left) / rect.width;
+  let closest = null, bestDist = Infinity;
+  for(const t of tracks){
+    if(!t.buffer) continue;
+    const oSec = t.offsetMs/1000;
+    const startFrac = ((oSec%masterLoopSeconds)+masterLoopSeconds)%masterLoopSeconds/masterLoopSeconds;
+    const midFrac = startFrac + Math.min(t.buffer.duration/masterLoopSeconds,1)/2;
+    const d = Math.abs(xFrac - midFrac);
+    if(d < bestDist){ bestDist=d; closest=t; }
+  }
+  if(closest) showOffsetPopup(closest, e.clientX, e.clientY);
+});
+
+/* ═══════════════════════════════════════════════════════
+   PLAYBACK
+═══════════════════════════════════════════════════════ */
+function stopPlayback(t){
+  if(t.source){ try{t.source.stop();}catch{} try{t.source.disconnect();}catch{} t.source=null; }
+  t.isPlaying = false; updateTrackUI(t); updateGlobalButtons();
+}
+
+function startPlayback(t){
+  if(!t.buffer || !audioCtx) return;
+  stopPlayback(t);
+  const src = audioCtx.createBufferSource();
+  src.buffer = t.buffer; src.loop = true;
+  src.loopStart = 0; src.loopEnd = t.buffer.duration;
+  src.connect(t.gainNode);
+
+  if(masterLoopStartAudioTime !== null && t.index !== 0){
+    // Find the current phase in the master loop
+    const now = audioCtx.currentTime;
+    const elapsed = now - masterLoopStartAudioTime;
+    const masterPhase = ((elapsed % masterLoopSeconds) + masterLoopSeconds) % masterLoopSeconds;
+    // Where in THIS track's buffer does masterPhase correspond?
+    // If track is longer than master: masterPhase mod track.duration
+    const offsetSec = (t.offsetMs||0) / 1000;
+    const bufPhase = ((masterPhase - offsetSec) % t.buffer.duration + t.buffer.duration) % t.buffer.duration;
+    src.start(0, bufPhase);
+  } else {
+    src.start();
+  }
+
+  t.source = src; t.isPlaying = true; updateTrackUI(t); updateGlobalButtons();
+  if(overlayVisible) drawOverlay();
+}
+
+/* ═══════════════════════════════════════════════════════
+   RECORDING — timing rigoroso con clock unificato
+   
+   Da armCountdown in poi metroAudioCtx === audioCtx,
+   quindi audioTime dei beat è nello stesso clock della REC.
+   
+   Flusso:
+   1. fireRecording(recStartAudioTime) — recStartAudioTime
+      è nel clock audioCtx (= metroAudioCtx)
+   2. pcmRec.start() parte IMMEDIATAMENTE
+   3. recActualStartCtxTime = audioCtx.currentTime al .start()
+   4. leadMs = max(0, recStartAudioTime - recActualStartCtxTime) * 1000
+      → campioni silenzio pre-beat già catturati
+   5. trimTotale = leadMs + recordingLatencyMs
+   6. Se il beat è già passato (latenza setTimeout), leadMs=0
+      e si usa solo la compensazione microfono
+═══════════════════════════════════════════════════════ */
+function startRecordingNow(t, recStartAudioTime){
+  if(!inputStream || !audioCtx){ showToast('Prima attiva l\'audio!'); return; }
+
+  const bars = t.barsToRecord || 4;
+  t.barsTarget = bars;
+  t.recBeatCount = 0;
+  t.isT1Master = (t.index === 0);
+
+  const loopDurationMs  = barsToMs(bars);
+  const loopDurationSec = loopDurationMs / 1000;
+
+  // ── Avvia registrazione IMMEDIATAMENTE ──
+  t.pcmRec = createPCMRecorder(audioCtx);
+  const nowCtx = audioCtx.currentTime;  // letto nello stesso microtask di .start()
+  t.pcmRec.start();
+  t.recActualStartCtxTime = nowCtx;
+
+  // recStartAudioTime è nel clock audioCtx (garantito da armCountdown)
+  // Fallback: se non fornito, usa adesso
+  const recStart = (recStartAudioTime != null) ? recStartAudioTime : nowCtx;
+  t.recStartAudioTime = recStart;
+
+  // leadMs: quanti ms di audio pre-beat abbiamo già catturato
+  // Se recStart è già nel passato (beat perso per ritardo setTimeout), leadMs=0
+  const leadMs = Math.max(0, Math.round((recStart - nowCtx) * 1000));
+  t.recTrimMs = leadMs + recordingLatencyMs;
+
+  if(t.isT1Master){
+    setMasterAnchor(loopDurationSec, recStart);
+    showToast(
+      `● T1 REC — ${bars}×${beatsPerBar}b @${bpm}BPM = ${loopDurationMs}ms` +
+      `  lead:${leadMs}ms lat:${recordingLatencyMs}ms trim:${Math.round(t.recTrimMs)}ms`,
+      4000
+    );
+  } else {
+    showToast(
+      `● T${t.index+1} REC — ${bars}×${beatsPerBar}b = ${loopDurationMs}ms` +
+      `  [T1 sync  trim:${Math.round(t.recTrimMs)}ms]`,
+      3000
+    );
+  }
+
+  t.isRecording = true;
+  updateTrackUI(t); updateGlobalButtons();
+}
+
+/* ═══════════════════════════════════════════════════════
+   ONSET DETECTION + BEAT SNAP
+   ─────────────────────────────────────────────────────
+   Stima il primo campione "sonoro" nel buffer registrato
+   usando una finestra RMS breve (10ms) con threshold
+   adattiva sul rumore di fondo (primi 100ms).
+   
+   Poi snappa l'onset al beat del metrono più vicino
+   (entro ±beatsPerBar/2 beat) e imposta offsetMs
+   così il loop parte allineato al beat-0.
+   
+   Questo compensa il "ritardo umano" naturale tra
+   il downbeat e il momento in cui si suona davvero.
+═══════════════════════════════════════════════════════ */
+
+/**
+ * Trova l'onset in ms dall'inizio del buffer.
+ * Restituisce null se nessun onset trovato (silenzio).
+ * @param {AudioBuffer} buf
+ * @param {number} [windowMs=10] finestra RMS in ms
+ * @param {number} [noiseMs=80]  campioni iniziali per stima rumore
+ * @param {number} [threshMult=5] moltiplicatore sul rumore per soglia
+ */
+function detectOnset(buf, windowMs=10, noiseMs=80, threshMult=5){
+  const sr = buf.sampleRate;
+  const data = buf.getChannelData(0);
+  const winSamples = Math.max(1, Math.round((windowMs / 1000) * sr));
+  const noiseSamples = Math.min(Math.round((noiseMs / 1000) * sr), Math.floor(data.length * 0.15));
+
+  // Stima RMS del rumore sui primi noiseSamples campioni
+  let sumSqNoise = 0;
+  for(let i = 0; i < noiseSamples; i++) sumSqNoise += data[i] * data[i];
+  const noiseRms = Math.sqrt(sumSqNoise / Math.max(1, noiseSamples));
+  const threshold = Math.max(0.003, noiseRms * threshMult);
+
+  // Scorri il buffer a finestre di winSamples: trova la prima finestra sopra soglia
+  for(let i = noiseSamples; i < data.length - winSamples; i += Math.max(1, Math.floor(winSamples / 2))){
+    let sumSq = 0;
+    for(let j = 0; j < winSamples; j++) sumSq += data[i+j] * data[i+j];
+    const rms = Math.sqrt(sumSq / winSamples);
+    if(rms > threshold){
+      // Raffina: trova il campione esatto con picco assoluto nella finestra
+      let peakIdx = i;
+      let peakAbs = 0;
+      for(let j = i; j < Math.min(i + winSamples * 3, data.length); j++){
+        if(Math.abs(data[j]) > peakAbs){ peakAbs = Math.abs(data[j]); peakIdx = j; }
+      }
+      return (peakIdx / sr) * 1000; // ms dall'inizio del buffer
+    }
+  }
+  return null; // silenzio totale
+}
+
+/**
+ * Dato un onset in ms dall'inizio del loop, calcola l'offset
+ * da sottrarre per allineare il beat-0 all'inizio del buffer.
+ * 
+ * Il principio: se il musicista ha suonato a onsetMs dall'inizio
+ * del buffer, quel suono doveva cadere su un beat del metro.
+ * Troviamo quale beat è più vicino e usiamo quell'allineamento.
+ * 
+ * Restituisce { offsetMs, beatIdx, snapMs } oppure null se nessun snap valido.
+ */
+function snapOnsetToBeat(onsetMs, loopDurationMs){
+  if(onsetMs == null) return null;
+  const beatMs = Math.round(60000 / bpm);
+  const totalBeats = Math.round(loopDurationMs / beatMs);
+
+  // Troviamo il beat più vicino all'onset (con tolleranza ±70% del beat)
+  let bestBeat = 0, bestDiff = Infinity;
+  for(let b = 0; b < totalBeats; b++){
+    const beatTime = b * beatMs;
+    const diff = Math.abs(onsetMs - beatTime);
+    if(diff < bestDiff){ bestDiff = diff; bestBeat = b; }
+  }
+
+  // Solo se siamo entro metà beat (l'onset è "ragionevolmente" a tempo)
+  const maxSnap = beatMs * 0.65;
+  if(bestDiff > maxSnap) return null;
+
+  // L'onset ha suonato `onsetMs` dopo l'inizio del buffer.
+  // Il beat-0 era a 0ms. Se l'onset è al beat B, il buffer
+  // deve iniziare B*beatMs prima dell'onset: offsetMs = -(bestBeat * beatMs)
+  // (negativo = sposta il suono in avanti nel loop)
+  const snapMs = bestBeat * beatMs;
+  const offsetMs = -(onsetMs - snapMs); // correzione da applicare al loop
+  return { offsetMs: Math.round(offsetMs), beatIdx: bestBeat, snapMs: Math.round(snapMs), diff: Math.round(bestDiff) };
+}
+
+function stopRecording(t){
+  if(!t.pcmRec || !t.isRecording) return;
+  t.barsTarget = 0;
+
+  let buf;
+  try{ buf = t.pcmRec.stop(t.recTrimMs || 0); }
+  catch(err){ console.error(err); t.isRecording=false; updateTrackUI(t); return; }
+  t.pcmRec = null;
+  t.isRecording = false; t.barsTarget = 0; t.recBeatCount = 0;
+  if(t.ui.recProgressBar) t.ui.recProgressBar.style.width = '100%';
+
+  if(!buf || buf.length < 100){ showToast('Registrazione troppo breve.'); updateTrackUI(t); updateGlobalButtons(); return; }
+
+  // ── Taglia il buffer alla lunghezza esatta del loop ──────
+  // Calcoliamo i campioni target dal loopDurationMs (intero in ms, no drift float)
+  const bars = t.barsToRecord || 4;
+  const loopDurationMs = barsToMs(bars);
+  const loopDurationSec = loopDurationMs / 1000;
+  const sr = buf.sampleRate;
+  const targetSamples = Math.round((loopDurationMs / 1000) * sr);
+  const capturedSamples = buf.length;
+
+  let finalBuf;
+  if(capturedSamples !== targetSamples){
+    finalBuf = audioCtx.createBuffer(1, targetSamples, sr);
+    const src = buf.getChannelData(0);
+    const dst = finalBuf.getChannelData(0);
+    dst.set(src.subarray(0, Math.min(capturedSamples, targetSamples)));
+  } else {
+    finalBuf = buf;
+  }
+
+  // ── Onset detection + beat snap ──────────────────────────
+  const onsetMs = detectOnset(finalBuf);
+  const snapResult = (onsetMs != null) ? snapOnsetToBeat(onsetMs, loopDurationMs) : null;
+
+  if(t.isT1Master){
+    t.buffer = finalBuf;
+    setMasterAnchor(loopDurationSec, t.recStartAudioTime);
+    snapMetroToMaster();
+
+    if(snapResult){
+      t.offsetMs = snapResult.offsetMs;
+      showToast(
+        `✓ T1 onset: ${Math.round(onsetMs)}ms → beat ${snapResult.beatIdx}` +
+        ` · offset ${snapResult.offsetMs > 0?'+':''}${snapResult.offsetMs}ms` +
+        `  [buf:${(capturedSamples/sr*1000).toFixed(0)}→${loopDurationMs}ms]`,
+        5000
+      );
+    } else if(onsetMs != null){
+      t.offsetMs = 0;
+      showToast(`⚠ T1 onset ${Math.round(onsetMs)}ms — fuori tolleranza beat, offset=0`, 4000);
+    } else {
+      t.offsetMs = 0;
+      showToast(`⚠ T1: nessun suono rilevato — controlla gain microfono!`, 4000);
+    }
+  } else {
+    t.buffer = processSecondaryBuffer(finalBuf, t);
+    if(snapResult){
+      t.offsetMs = snapResult.offsetMs;
+      showToast(
+        `✓ T${t.index+1} onset: ${Math.round(onsetMs)}ms → beat ${snapResult.beatIdx}` +
+        ` · offset ${snapResult.offsetMs > 0?'+':''}${snapResult.offsetMs}ms`,
+        3500
+      );
+    } else {
+      t.offsetMs = 0;
+      if(onsetMs != null)
+        showToast(`⚠ T${t.index+1}: onset ${Math.round(onsetMs)}ms fuori snap`, 3000);
+    }
+  }
+
+  drawWaveform(t.ui.canvas, t.buffer, TRACK_COLORS[t.index]);
+  if(t.ui.recProgressBar) t.ui.recProgressBar.style.width = '0%';
+  if(t.ui.offsetValEl) t.ui.offsetValEl.textContent = fmtMs(t.offsetMs);
+  if(t.autoPlay) startPlayback(t);
+  if(overlayVisible) drawOverlay();
+  updateTrackUI(t); updateGlobalButtons();
+}
+
+function abortRecording(t){
+  if(t.pcmRec){ try{t.pcmRec.abort();}catch{} t.pcmRec = null; }
+  t.isRecording = false; t.barsTarget = 0; t.recBeatCount = 0;
+}
+
+function clearTrack(t){
+  stopPlayback(t); abortRecording(t);
+  t.countinArmed = false;
+  const idx = pendingTracksForCountdown.indexOf(t);
+  if(idx >= 0) pendingTracksForCountdown.splice(idx, 1);
+  if(pendingTracksForCountdown.length === 0 && countdownPhase !== 'idle') cancelCountdown();
+
+  t.buffer = null; t.offsetMs = 0; t.recBeatCount = 0;
+  if(t.index === 0){ // clearing T1 resets master
+    masterLoopStartAudioTime = null; masterLoopSeconds = null;
+    document.getElementById('masterLen').textContent = '—';
+  }
+  if(t.ui.recProgressBar) t.ui.recProgressBar.style.width = '0%';
+  if(t.ui.offsetValEl) t.ui.offsetValEl.textContent = '0 ms';
+  drawWaveform(t.ui.canvas, null, TRACK_COLORS[t.index]);
+  updateTrackUI(t); updateGlobalButtons();
+  if(overlayVisible) drawOverlay();
+}
+
+/* ═══════════════════════════════════════════════════════
+   TRACK BUTTON LOGIC
+═══════════════════════════════════════════════════════ */
+function toggleMainButton(t){
+  if(!isInitialized){ showToast('Prima clicca ⚡ Attiva Audio'); return; }
+
+  if(t.countinArmed){
+    // Cancel armed state
+    t.countinArmed = false;
+    const idx = pendingTracksForCountdown.indexOf(t);
+    if(idx >= 0) pendingTracksForCountdown.splice(idx, 1);
+    if(pendingTracksForCountdown.length === 0) cancelCountdown();
+    updateTrackUI(t); return;
+  }
+
+  if(t.isRecording){ stopRecording(t); return; }
+
+  if(!t.buffer){
+    // Arm for recording
+    if(t.index !== 0 && masterLoopSeconds === null){
+      showToast('⚠ Registra prima T1 (traccia 1 = Master)!'); return;
+    }
+    t.countinArmed = true; updateTrackUI(t); updateGlobalButtons();
+    armCountdown(t);
+  } else {
+    // Toggle playback
+    if(t.isPlaying) stopPlayback(t);
+    else startPlayback(t);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TRACK UI
+═══════════════════════════════════════════════════════ */
+function updateRecProgress(t, pct){
+  if(t.ui.recProgressBar) t.ui.recProgressBar.style.width = (Math.min(1,pct)*100) + '%';
+  if(t.ui.trackLeds){
+    const n = t.ui.trackLeds.length;
+    t.ui.trackLeds.forEach((l,i)=>{
+      l.classList.remove('rec','done');
+      if(i/n < pct) l.classList.add(pct >= 1 ? 'done' : 'rec');
+    });
+  }
+}
+
+function updateTrackUI(t){
+  const{el, btnMain, stateTag, info, clearBtn} = t.ui;
+  const isT1 = t.index === 0;
+  const waiting = t.countinArmed && (countdownPhase === 'waiting_t1_downbeat' || countdownPhase === 'counting');
+
+  el.classList.toggle('is-master-track', isT1);
+  el.classList.toggle('is-rec', t.isRecording);
+  el.classList.toggle('is-countin', waiting && !t.isRecording);
+  el.classList.toggle('is-play', t.isPlaying && !t.isRecording && !waiting);
+  el.classList.toggle('has-buffer', !!t.buffer && !t.isPlaying && !t.isRecording && !waiting);
+  el.classList.toggle('is-muted', t.isMuted);
+  if(t.ui.trackNumEl) t.ui.trackNumEl.classList.toggle('is-t1', isT1);
+
+  if(waiting){
+    const phase = countdownPhase === 'counting' ? 'COUNT-IN' : isT1 ? 'WAIT BEAT-0' : 'WAIT T1…';
+    stateTag.textContent = phase; stateTag.className = 'track-state s-wait s-countin';
+    info.textContent = isT1 ? `count-in ${countdownBeatsTotal} beat` : 'aspetta downbeat T1';
+  } else if(t.isRecording){
+    const bars = t.barsToRecord||4;
+    const rem = bars*beatsPerBar - (t.recBeatCount||0);
+    stateTag.textContent = '● REC'; stateTag.className = 'track-state s-rec';
+    info.textContent = `REC ${bars}🎵 — ${Math.max(0,rem)} beat`;
+  } else if(t.isPlaying){
+    stateTag.textContent = isT1 ? '▶ MASTER' : '▶ PLAY';
+    stateTag.className = 'track-state ' + (isT1 ? 's-master' : 's-play');
+    info.textContent = fmtSec(t.buffer?.duration);
+  } else if(t.buffer){
+    stateTag.textContent = isT1 ? '■ MASTER' : '■ READY';
+    stateTag.className = 'track-state ' + (isT1 ? 's-master' : 's-ready');
+    info.textContent = fmtSec(t.buffer?.duration);
+  } else if(t.isMuted && !t.buffer){
+    stateTag.textContent = 'MUTED'; stateTag.className = 'track-state s-muted';
+    info.textContent = '—';
+  } else {
+    stateTag.textContent = isT1 ? 'T1 IDLE' : 'IDLE';
+    stateTag.className = 'track-state';
+    info.textContent = isT1 ? 'registra T1 per primo' : `${t.barsToRecord} bar — premi ●`;
+  }
+
+  // Button SVG
+  const svg = btnMain.querySelector('svg');
+  if(waiting){
+    svg.innerHTML = `<text x="17" y="23" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="11" font-weight="700" fill="rgba(255,170,0,.95)">${isT1?'CD':'WAIT'}</text>`;
+  } else if(!t.buffer){
+    svg.innerHTML = t.isRecording
+      ? `<rect x="8" y="8" width="18" height="18" rx="3" fill="rgba(255,51,68,.9)"/>`
+      : `<circle cx="17" cy="17" r="9" fill="rgba(255,51,68,.85)"/>`;
+  } else {
+    if(t.isPlaying){
+      const col = t.isMuted ? 'rgba(90,106,136,.5)' : (isT1 ? 'rgba(255,215,0,.9)' : 'rgba(0,207,255,.9)');
+      svg.innerHTML = `<rect x="8" y="8" width="7" height="18" rx="2" fill="${col}"/>
+                       <rect x="19" y="8" width="7" height="18" rx="2" fill="${col}"/>`;
+    } else {
+      const col = t.isMuted ? 'rgba(90,106,136,.5)' : (isT1 ? 'rgba(255,215,0,.9)' : 'rgba(0,255,153,.9)');
+      svg.innerHTML = `<polygon points="10,8 28,17 10,26" fill="${col}"/>`;
+    }
+  }
+
+  clearBtn.disabled = !t.buffer && !t.isRecording && !t.countinArmed;
+  if(t.ui.muteBtn){
+    t.ui.muteBtn.className = t.isMuted ? 'btn-muted' : '';
+    t.ui.muteBtn.textContent = t.isMuted ? 'Unmute' : 'Mute';
+  }
+  if(t.ui.barBtns){
+    const dis = t.isRecording || t.countinArmed;
+    t.ui.barBtns.forEach(b=>{
+      b.disabled = dis;
+      b.classList.toggle('sel', parseInt(b.dataset.bars) === t.barsToRecord);
+    });
+  }
+  if(t.ui.apOff){ t.ui.apOff.classList.toggle('sel', !t.autoPlay); t.ui.apOn.classList.toggle('sel', t.autoPlay); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TRACK CARD BUILDER
+═══════════════════════════════════════════════════════ */
+function createTrack(i){
+  return{
+    index:i, buffer:null, source:null, gainNode:null, pcmRec:null,
+    isRecording:false, isPlaying:false, isMuted:false, _prevVol:0.85,
+    countinArmed:false, isT1Master:false,
+    autoPlay:true, barsToRecord:4,
+    barsTarget:0, recBeatCount:0,
+    offsetMs:0, recStartAudioTime:0, recTrimMs:0,
+    ui:{}
+  };
+}
+
+const BAR_OPTS = [1,2,4,8,16];
+
+function buildTrackCard(t){
+  const el = document.createElement('section');
+  el.className = 'track' + (t.index===0?' is-master-track':'');
+  const leds = Array.from({length:8},()=>`<div class="t-led"></div>`).join('');
+  const barBtns = BAR_OPTS.map(n=>`<button class="bar-btn${n===4?' sel':''}" data-bars="${n}">${n}</button>`).join('');
+  const col = TRACK_COLORS[t.index].replace('.8','.5').replace('.75','.5');
+
+  el.innerHTML = `
+    <div class="track-glow"></div>
+    <div class="track-head">
+      <div class="track-num${t.index===0?' is-t1':''}" id="tn">${String(t.index+1).padStart(2,'0')}</div>
+      <span class="track-state" id="st">${t.index===0?'T1 IDLE':'IDLE'}</span>
+    </div>
+    <div class="track-leds" id="tls">${leds}</div>
+    <canvas class="waveform" id="cvs" width="200" height="28" style="border-top:2px solid ${col}"></canvas>
+    <div class="rec-progress-wrap"><div class="rec-progress-bar" id="rpb"></div></div>
+    <div class="btn-main-wrap">
+      <button class="btn-main" id="bm">
+        <div class="spin-ring"></div>
+        <svg viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="17" cy="17" r="9" fill="rgba(255,51,68,.85)"/>
+        </svg>
+      </button>
+    </div>
+    <div class="track-info" id="inf">${t.index===0?'registra T1 per primo':'premi per registrare'}</div>
+    <div class="offset-row">
+      <span class="offset-lbl">OFFSET</span>
+      <span class="offset-val" id="ovl">0 ms</span>
+      <button class="btn-offset" id="btnOff">✎</button>
+    </div>
+    <div class="bars-row">
+      <span class="bars-lbl">BARS</span>${barBtns}
+    </div>
+    <div class="vol-row">
+      <span class="vol-label">VOL</span>
+      <input type="range" id="vol" min="0" max="1" step="0.01" value="0.85"/>
+      <span class="vol-pct" id="vp">85%</span>
+    </div>
+    <div class="track-btns">
+      <button id="muteBtn">Mute</button>
+      <button id="clearBtn" disabled>Clear</button>
+    </div>`;
+
+  const btnMain=el.querySelector('#bm'), stateTag=el.querySelector('#st');
+  const info=el.querySelector('#inf'), vol=el.querySelector('#vol');
+  const volpct=el.querySelector('#vp'), muteBtn=el.querySelector('#muteBtn');
+  const clearBtn=el.querySelector('#clearBtn'), canvas=el.querySelector('#cvs');
+  const recProgressBar=el.querySelector('#rpb'), offsetValEl=el.querySelector('#ovl');
+  const btnOffset=el.querySelector('#btnOff'), trackNumEl=el.querySelector('#tn');
+  const trackLeds=Array.from(el.querySelector('#tls').querySelectorAll('.t-led'));
+  const barBtnEls=Array.from(el.querySelectorAll('.bar-btn'));
+  const apOff=null, apOn=null; // simplified: auto-play always on
+
+  t.ui = {el,btnMain,stateTag,info,vol,volpct,muteBtn,clearBtn,canvas,
+           recProgressBar,offsetValEl,btnOffset,trackNumEl,trackLeds,
+           barBtns:barBtnEls, apOff, apOn};
+
+  barBtnEls.forEach(b=>{
+    b.addEventListener('click',()=>{ t.barsToRecord=parseInt(b.dataset.bars); updateTrackUI(t); });
+  });
+
+  btnMain.addEventListener('click',()=> toggleMainButton(t));
+
+  vol.addEventListener('input',()=>{
+    const v = parseFloat(vol.value);
+    volpct.textContent = Math.round(v*100)+'%';
+    if(t.gainNode) t.gainNode.gain.setTargetAtTime(v, audioCtx.currentTime, .01);
+    if(v > 0.001) t.isMuted = false;
+    updateTrackUI(t);
+  });
+
+  muteBtn.addEventListener('click',()=>{
+    if(!t.gainNode) return;
+    if(!t.isMuted){
+      t._prevVol = parseFloat(vol.value);
+      t.gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, .01);
+      vol.value='0'; volpct.textContent='0%'; t.isMuted=true;
+    } else {
+      const pv = t._prevVol||0.85;
+      t.gainNode.gain.setTargetAtTime(pv, audioCtx.currentTime, .01);
+      vol.value=String(pv); volpct.textContent=Math.round(pv*100)+'%'; t.isMuted=false;
+    }
+    updateTrackUI(t);
+    if(overlayVisible) drawOverlay();
+  });
+
+  clearBtn.addEventListener('click',()=> clearTrack(t));
+  btnOffset.addEventListener('click',(e)=> showOffsetPopup(t, e.clientX, e.clientY));
+
+  return el;
+}
+
+/* ═══════════════════════════════════════════════════════
+   OFFSET POPUP
+═══════════════════════════════════════════════════════ */
+const offsetPopupEl = document.getElementById('offsetPopup');
+let offsetPopupTrack = null, offsetOriginal = 0;
+
+function showOffsetPopup(t, cx, cy){
+  offsetPopupTrack = t; offsetOriginal = t.offsetMs;
+  document.getElementById('offsetPopupTitle').textContent = `OFFSET T${t.index+1}`;
+  const ms = Math.round(t.offsetMs);
+  document.getElementById('offsetSlider').value = ms;
+  document.getElementById('offsetSliderVal').textContent = ms+' ms';
+  document.getElementById('offsetBeatSlider').value = Math.max(0,Math.round(ms/(60000/bpm)));
+  document.getElementById('offsetBeatVal').textContent = 'beat '+Math.max(0,Math.round(ms/(60000/bpm)));
+  document.getElementById('offsetFineMs').value = ms;
+  const pw=280, ph=220;
+  let px=cx+12, py=cy-20;
+  if(px+pw>window.innerWidth) px=cx-pw-12;
+  if(py+ph>window.innerHeight) py=window.innerHeight-ph-20;
+  offsetPopupEl.style.left=px+'px'; offsetPopupEl.style.top=Math.max(10,py)+'px';
+  offsetPopupEl.classList.add('show');
+}
+
+document.getElementById('offsetSlider').addEventListener('input',()=>{
+  const v=parseInt(document.getElementById('offsetSlider').value);
+  document.getElementById('offsetSliderVal').textContent=v+' ms';
+  document.getElementById('offsetFineMs').value=v;
+});
+document.getElementById('offsetBeatSlider').addEventListener('input',()=>{
+  const v=parseInt(document.getElementById('offsetBeatSlider').value)*(60000/bpm);
+  document.getElementById('offsetBeatVal').textContent='beat '+parseInt(document.getElementById('offsetBeatSlider').value);
+  document.getElementById('offsetSlider').value=Math.round(v);
+  document.getElementById('offsetSliderVal').textContent=Math.round(v)+' ms';
+  document.getElementById('offsetFineMs').value=Math.round(v);
+});
+document.getElementById('offsetApply').addEventListener('click',()=>{
+  if(!offsetPopupTrack) return;
+  const t=offsetPopupTrack;
+  t.offsetMs=parseInt(document.getElementById('offsetFineMs').value)||0;
+  if(t.ui.offsetValEl) t.ui.offsetValEl.textContent=fmtMs(t.offsetMs);
+  if(t.isPlaying){ stopPlayback(t); startPlayback(t); }
+  if(overlayVisible) drawOverlay();
+  offsetPopupEl.classList.remove('show');
+  showToast(`T${t.index+1} offset: ${fmtMs(t.offsetMs)}`, 2000);
+});
+document.getElementById('offsetCancel').addEventListener('click',()=>{
+  if(offsetPopupTrack) offsetPopupTrack.offsetMs=offsetOriginal;
+  offsetPopupEl.classList.remove('show');
+});
+document.getElementById('offsetPopupClose').addEventListener('click',()=> offsetPopupEl.classList.remove('show'));
+document.addEventListener('click',(e)=>{
+  if(offsetPopupEl.classList.contains('show') && !offsetPopupEl.contains(e.target) && !e.target.classList.contains('btn-offset'))
+    offsetPopupEl.classList.remove('show');
+},{capture:true});
+
+/* ═══════════════════════════════════════════════════════
+   BUILD UI + INIT AUDIO
+═══════════════════════════════════════════════════════ */
+function buildUI(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML=''; tracks.length=0;
+  for(let i=0;i<TRACKS;i++){
+    const t=createTrack(i); tracks.push(t);
+    grid.appendChild(buildTrackCard(t));
+  }
+  updateGlobalButtons();
+}
+
+async function initAudio(){
+  if(isInitialized) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)({ latencyHint: 'interactive' });
+  document.getElementById('sr').textContent = audioCtx.sampleRate+' Hz';
+  masterGain = audioCtx.createGain(); masterGain.gain.value=0.9;
+  masterGain.connect(audioCtx.destination);
+  const mode = document.getElementById('sourceSelect').value;
+  if(mode==='mic'){
+    inputStream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  } else {
+    inputStream = await navigator.mediaDevices.getDisplayMedia({audio:true,video:true});
+  }
+  if(!inputStream || inputStream.getAudioTracks().length === 0){
+    throw new Error('Nessun input audio disponibile. Seleziona Microfono e consenti il permesso audio.');
+  }
+  micSourceNode = audioCtx.createMediaStreamSource(inputStream);
+  inputGainNode = audioCtx.createGain();
+  inputGainNode.gain.value = parseFloat(micGainSliderEl.value) || 1;
+  micSourceNode.connect(inputGainNode);
+  startMicMeter();
+  try{
+    await ensureRecorderWorklet(audioCtx);
+  } catch(err){
+    recorderWorkletReady = false;
+    console.warn('Recorder worklet init skipped', err);
+  }
+  for(const t of tracks){
+    t.gainNode = audioCtx.createGain();
+    t.gainNode.gain.value = parseFloat(t.ui.vol.value);
+    t.gainNode.connect(masterGain);
+  }
+  await audioCtx.resume();
+  isInitialized=true; setDots();
+  setMicGain(inputGainNode.gain.value);
+  if(!recordingLatencyMs){
+    const autoLat = Math.max(18, Math.round(((audioCtx.baseLatency || 0) + (audioCtx.outputLatency || 0)) * 1000) + 20);
+    recordingLatencyMs = autoLat;
+    latDisplayEl.textContent = autoLat + ' ms';
+  }
+  const bi=document.getElementById('btnInit');
+  bi.textContent='✓ Audio attivo'; bi.disabled=true;
+  document.getElementById('btnShowCal').disabled=false;
+  updateGlobalButtons();
+}
+
+const toastEl = document.getElementById('toast');
+function showToast(msg, dur=4000){
+  toastEl.textContent=msg; toastEl.style.display='block';
+  clearTimeout(toastEl._t); toastEl._t=setTimeout(()=>toastEl.style.display='none',dur);
+}
+
+document.getElementById('btnInit').addEventListener('click', async()=>{
+  const bi=document.getElementById('btnInit');
+  try{ bi.textContent='…'; bi.disabled=true; await initAudio(); }
+  catch(e){ console.error(e); bi.disabled=false; bi.textContent='⚡ Attiva Audio'; showToast('Errore: '+(e?.message||e)); }
+  finally{ setDots(); }
+});
+
+document.getElementById('btnPlayAll').addEventListener('click',()=>{
+  for(const t of tracks) if(t.buffer&&!t.isPlaying) startPlayback(t);
+  updateGlobalButtons();
+});
+document.getElementById('btnStopAll').addEventListener('click',()=>{
+  for(const t of tracks){ stopPlayback(t); if(t.isRecording) stopRecording(t); }
+  cancelCountdown(); for(const t of tracks){ t.countinArmed=false; updateTrackUI(t); }
+  updateGlobalButtons();
+});
+document.getElementById('btnClearAll').addEventListener('click',()=>{
+  if(!confirm('Cancellare tutte le tracce?')) return;
+  for(const t of tracks) clearTrack(t);
+  masterLoopStartAudioTime=null; masterLoopSeconds=null;
+  document.getElementById('masterLen').textContent='—';
+  updateGlobalButtons(); if(overlayVisible) drawOverlay();
+});
+document.getElementById('sourceSelect').addEventListener('change',()=>{
+  if(isInitialized) showToast('Ricarica la pagina per cambiare sorgente.');
+});
+
+setInterval(setDots, 600);
+setInterval(()=>{
+  // Live update "wait T1 downbeat" info per tracce secondarie
+  if(countdownPhase==='waiting_t1_downbeat' && masterLoopSeconds && metroAudioCtx && masterLoopStartAudioTime){
+    const now=metroAudioCtx.currentTime;
+    const el=now-masterLoopStartAudioTime;
+    const phase=((el%masterLoopSeconds)+masterLoopSeconds)%masterLoopSeconds;
+    const rem=masterLoopSeconds-phase;
+    cdBigNum.textContent=rem.toFixed(1)+'s';
+    cdBigLabel.textContent='loop in '+rem.toFixed(2)+'s → REC';
+    cdLatInfo.textContent = recordingLatencyMs > 0 ? `anticipo: ${recordingLatencyMs}ms` : '';
+    for(const t of tracks) if(t.countinArmed && t.index!==0 && t.ui.info)
+      t.ui.info.textContent='⏳ downbeat T1 in '+rem.toFixed(1)+'s';
+  }
+  if(overlayVisible) drawOverlay();
+}, 80);
+
+window.addEventListener('resize',()=>{
+  for(const t of tracks) if(t.buffer) drawWaveform(t.ui.canvas,t.buffer,TRACK_COLORS[t.index]);
+  if(overlayVisible) drawOverlay();
+});
+
+buildUI();
+
+/* ═══════════════════════════════════════════════════════
+   STICKY METRO
+═══════════════════════════════════════════════════════ */
+(function(){
+  const stickyBar = document.getElementById('stickyMetro');
+  const stickyStrip = document.getElementById('ledStripSticky');
+  const stickyNumEl = document.getElementById('beatNumSticky');
+  const metroBarEl = document.getElementById('metroBarEl');
+
+  window.stickyRebuild = function(){
+    buildLedStrip(stickyStrip, stickyLedEls);
+  };
+  stickyRebuild();
+
+  const _origSetLed = setLed;
+  setLed = function(beat, isCountdown=false){
+    _origSetLed(beat, isCountdown);
+    stickyLedEls.forEach((l,i)=>{
+      l.classList.remove('lit','countdown');
+      if(i===beat){ if(isCountdown)l.classList.add('countdown'); else l.classList.add('lit'); }
+    });
+    if(beat>=0){
+      stickyNumEl.textContent=beat+1; stickyNumEl.classList.add('flash');
+      clearTimeout(stickyNumEl._ft); stickyNumEl._ft=setTimeout(()=>stickyNumEl.classList.remove('flash'),80);
+    } else { stickyNumEl.textContent='—'; }
+  };
+
+  const obs = new IntersectionObserver(([e])=> stickyBar.classList.toggle('visible',!e.isIntersecting),{threshold:0});
+  obs.observe(metroBarEl);
+})();
+</script>
+</body>
+</html>
