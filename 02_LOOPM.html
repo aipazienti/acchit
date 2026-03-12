@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Maracaloop B — 8 Tracce</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap');
+
+    :root{
+      --bg:#06080f; --panel:#0c1120; --text:#dce8ff;
+      --muted:#5a6a88; --red:#ff3344; --green:#00ff99;
+      --cyan:#00cfff; --orange:#ffaa00; --purple:#a855f7;
+      --stroke:#182040; --stroke2:#0f1830; --r:14px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Barlow',sans-serif;
+      background:var(--bg);
+      background-image:
+        radial-gradient(ellipse 900px 500px at 15% 5%, rgba(0,80,255,.06) 0%,transparent 70%),
+        radial-gradient(ellipse 700px 500px at 85% 70%, rgba(0,200,80,.04) 0%,transparent 70%),
+        radial-gradient(ellipse 500px 300px at 50% 50%, rgba(168,85,247,.03) 0%,transparent 70%);
+      color:var(--text); min-height:100vh;
+    }
+
+    /* ─── HEADER ─── */
+    header{
+      max-width:1180px;margin:0 auto;padding:14px 20px 12px;
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:10px;border-bottom:1px solid var(--stroke);
+    }
+    .logo{font-family:'Share Tech Mono',monospace;font-size:22px;letter-spacing:.18em;}
+    .logo span{color:var(--cyan);}
+    .top-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    select{
+      font:inherit;background:var(--panel);border:1px solid var(--stroke);
+      color:var(--text);padding:8px 12px;border-radius:10px;outline:none;cursor:pointer;
+    }
+    select:focus{border-color:rgba(0,207,255,.4);}
+    button{
+      font:inherit;cursor:pointer;border:1px solid var(--stroke);
+      background:var(--panel);color:var(--text);padding:8px 14px;
+      border-radius:10px;transition:background .15s,border-color .15s,transform .06s;
+      display:inline-flex;align-items:center;gap:6px;
+    }
+    button:active{transform:translateY(1px);}
+    button:hover:not(:disabled){background:rgba(255,255,255,.05);}
+    button:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+    .btn-init{border-color:rgba(0,207,255,.4);color:var(--cyan);}
+    .btn-play{border-color:rgba(0,255,153,.4);color:var(--green);}
+    .btn-stop{border-color:rgba(255,51,68,.3);color:#ff8090;}
+
+    /* ─── STATUS BAR ─── */
+    .statusbar{
+      max-width:1180px;margin:0 auto;padding:9px 20px;
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    }
+    .badge{
+      font-family:'Share Tech Mono',monospace;font-size:11px;
+      padding:4px 10px;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.3);border-radius:999px;
+      display:inline-flex;align-items:center;gap:7px;color:var(--muted);
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:#1e2a40;flex-shrink:0;}
+    .dot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+
+    /* ─── METRO BAR ─── */
+    .metro-bar{
+      max-width:1180px;margin:0 auto;
+      padding:12px 20px;border-bottom:1px solid var(--stroke);
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    }
+    .metro-label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.1em;}
+    .led-strip{display:flex;gap:3px;align-items:center;flex:1;min-width:160px;}
+    .led{
+      flex:1;height:18px;border-radius:4px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05);
+      transition:background .05s,box-shadow .05s;position:relative;
+    }
+    .led.beat1{border-color:rgba(255,51,68,.2);}
+    .led.lit{background:rgba(255,51,68,.85);box-shadow:0 0 8px rgba(255,51,68,.7);}
+    .led.beat1.lit{background:#ff4455;box-shadow:0 0 16px rgba(255,51,68,.9);}
+    .led.countdown{background:rgba(255,170,0,.7)!important;box-shadow:0 0 8px rgba(255,170,0,.6)!important;}
+    .led .beat-n{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:700;
+      color:rgba(255,255,255,.2);pointer-events:none;
+    }
+    .led.lit .beat-n,.led.beat1.lit .beat-n{color:rgba(255,255,255,.9);}
+    .led-sep{width:1px;height:18px;background:rgba(255,255,255,.07);flex-shrink:0;}
+
+    .bpm-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .bpm-wrap label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+    input[type="number"]{
+      font:inherit;width:68px;background:var(--panel);
+      border:1px solid var(--stroke);color:var(--text);
+      padding:7px 10px;border-radius:10px;outline:none;text-align:center;
+    }
+    input[type="number"]:focus{border-color:rgba(255,51,68,.5);}
+    .metro-toggle{
+      font-family:'Share Tech Mono',monospace;font-size:11px;
+      padding:7px 14px;border-radius:10px;
+      border:1px solid rgba(255,51,68,.35);color:#ff8090;white-space:nowrap;
+    }
+    .metro-toggle.active{background:rgba(255,51,68,.1);border-color:rgba(255,51,68,.6);color:var(--red);}
+    .beat-num{
+      font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;
+      color:rgba(255,255,255,.12);min-width:30px;text-align:center;transition:color .05s;
+    }
+    .beat-num.flash{color:var(--red);}
+
+    /* ─── STICKY MINI METRO BAR ─── */
+    #stickyMetro{
+      position:fixed;top:0;left:0;right:0;z-index:500;
+      background:rgba(6,8,15,.92);
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--stroke);
+      padding:7px 16px;
+      display:flex;align-items:center;gap:10px;
+      transform:translateY(-100%);
+      transition:transform .22s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    #stickyMetro.visible{
+      transform:translateY(0);
+      pointer-events:auto;
+    }
+    #stickyMetro .metro-label{font-size:10px;}
+    #stickyMetro .led-strip{flex:1;min-width:0;}
+    #stickyMetro .led{height:14px;}
+    #stickyMetro .led-sep{height:14px;}
+    #stickyMetro .beat-num{font-size:16px;min-width:24px;}
+
+    /* ─── COUNTDOWN OVERLAY (big display) ─── */
+    #countdownOverlay{
+      display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+      z-index:1000;pointer-events:none;
+      align-items:center;justify-content:center;
+    }
+    #countdownOverlay.show{display:flex;}
+    .cd-ring{
+      width:220px;height:220px;border-radius:50%;
+      border:4px solid rgba(255,170,0,.3);
+      background:rgba(6,8,15,.9);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      box-shadow:0 0 80px rgba(255,170,0,.15),0 0 30px rgba(255,170,0,.1);
+      animation:cdPulse 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes cdPulse{from{box-shadow:0 0 40px rgba(255,170,0,.1);}to{box-shadow:0 0 80px rgba(255,170,0,.3),0 0 160px rgba(255,170,0,.08);}}
+    .cd-number{
+      font-family:'Share Tech Mono',monospace;font-size:80px;
+      color:var(--orange);line-height:1;
+      text-shadow:0 0 40px rgba(255,170,0,.8);
+    }
+    .cd-label{
+      font-family:'Share Tech Mono',monospace;font-size:13px;
+      color:rgba(255,170,0,.6);letter-spacing:.15em;margin-top:4px;
+    }
+    .cd-bars{display:flex;gap:6px;margin-top:10px;align-items:center;}
+    .cd-bar-group{display:flex;gap:3px;}
+    .cd-bar-sep{width:1px;height:14px;background:rgba(255,170,0,.25);margin:0 2px;}
+    .cd-beat-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,170,0,.15);border:1px solid rgba(255,170,0,.25);transition:background .05s,box-shadow .05s;}
+    .cd-beat-dot.active{background:var(--orange);box-shadow:0 0 10px rgba(255,170,0,.9);border-color:var(--orange);}
+    .cd-beat-dot.done{background:rgba(255,170,0,.45);border-color:rgba(255,170,0,.5);}
+
+    /* ─── GRID ─── */
+    main{
+      max-width:1180px;margin:0 auto;
+      padding:16px 20px 24px;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+    }
+    @media(max-width:980px){main{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:520px){main{grid-template-columns:1fr;}}
+
+    /* ─── TRACK CARD ─── */
+    .track{
+      background:var(--panel);border:1px solid var(--stroke);
+      border-radius:var(--r);padding:12px;
+      position:relative;overflow:hidden;transition:border-color .2s;
+    }
+    .track.is-rec{border-color:rgba(255,51,68,.55);}
+    .track.is-countin{border-color:rgba(255,170,0,.55);}
+    .track.is-play{border-color:rgba(0,207,255,.4);}
+    .track.has-buffer{border-color:rgba(0,255,153,.2);}
+    .track-glow{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+      background:radial-gradient(circle at 50% 0%,rgba(255,51,68,.09),transparent 60%);}
+    .track.is-rec .track-glow{opacity:1;}
+    .track.is-countin .track-glow{background:radial-gradient(circle at 50% 0%,rgba(255,170,0,.1),transparent 60%);opacity:1;}
+    .track.is-play .track-glow{background:radial-gradient(circle at 50% 0%,rgba(0,207,255,.07),transparent 60%);opacity:1;}
+    .track>*:not(.track-glow){position:relative;}
+
+    .track-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;}
+    .track-num{font-family:'Share Tech Mono',monospace;font-size:20px;color:rgba(255,255,255,.1);}
+    .track-state{
+      font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:3px 7px;border-radius:999px;border:1px solid var(--stroke2);
+      color:var(--muted);background:rgba(0,0,0,.3);
+    }
+    .track-state.s-rec{border-color:rgba(255,51,68,.5);color:#ff8090;}
+    .track-state.s-countin{border-color:rgba(255,170,0,.5);color:var(--orange);}
+    .track-state.s-play{border-color:rgba(0,207,255,.4);color:var(--cyan);}
+    .track-state.s-ready{border-color:rgba(0,255,153,.3);color:var(--green);}
+
+    /* Bars progress LEDs */
+    .track-leds{display:flex;gap:2px;margin-bottom:6px;}
+    .t-led{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.04);transition:background .06s,box-shadow .06s;}
+    .t-led.lit{background:var(--orange);box-shadow:0 0 4px var(--orange);}
+    .t-led.done{background:var(--red);box-shadow:0 0 4px var(--red);}
+    .t-led.rec{background:var(--green);box-shadow:0 0 4px var(--green);}
+
+    /* Main button */
+    .btn-main-wrap{display:flex;justify-content:center;margin:4px 0 7px;}
+    .btn-main{
+      width:86px;height:86px;border-radius:50%;
+      border:2px solid var(--stroke);background:rgba(0,0,0,.4);
+      position:relative;cursor:pointer;
+      transition:border-color .2s,transform .1s;
+      display:grid;place-items:center;
+    }
+    .btn-main:hover:not(:disabled){transform:scale(1.04);}
+    .btn-main:active:not(:disabled){transform:scale(.96);}
+    .spin-ring{
+      position:absolute;inset:-5px;border-radius:50%;
+      border:3px solid transparent;
+      border-top-color:var(--red);border-right-color:rgba(255,51,68,.3);
+      opacity:0;transition:opacity .2s;
+    }
+    .track.is-rec .spin-ring{opacity:1;animation:spin 1.2s linear infinite;}
+    .track.is-countin .spin-ring{border-top-color:var(--orange);border-right-color:rgba(255,170,0,.3);opacity:1;animation:spin 0.5s linear infinite;}
+    .track.is-play .spin-ring{border-top-color:var(--cyan);border-right-color:rgba(0,207,255,.3);opacity:1;animation:spin 2s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .btn-main svg{width:30px;height:30px;}
+
+    .track-info{font-size:11px;color:var(--muted);text-align:center;min-height:14px;margin-bottom:7px;font-family:'Share Tech Mono',monospace;}
+
+    /* ─── BARS SELECTOR ─── */
+    .bars-row{display:flex;align-items:center;gap:4px;margin-bottom:7px;}
+    .bars-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);white-space:nowrap;min-width:26px;}
+    .bar-btn{
+      font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:4px 6px;border-radius:7px;flex:1;justify-content:center;
+      border:1px solid var(--stroke2);color:var(--muted);background:rgba(0,0,0,.2);
+    }
+    .bar-btn.sel{border-color:rgba(168,85,247,.55);color:var(--purple);background:rgba(168,85,247,.08);}
+
+    /* Count-in selector */
+    .countin-row{display:flex;align-items:center;gap:4px;margin-bottom:7px;}
+    .ci-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);white-space:nowrap;min-width:26px;}
+    .ci-btn{
+      font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:4px 6px;border-radius:7px;flex:1;justify-content:center;
+      border:1px solid var(--stroke2);color:var(--muted);background:rgba(0,0,0,.2);
+    }
+    .ci-btn.sel{border-color:rgba(255,170,0,.5);color:var(--orange);background:rgba(255,170,0,.07);}
+
+    /* Autoplay row */
+    .autoplay-row{display:flex;align-items:center;gap:4px;margin-bottom:7px;}
+    .ap-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);white-space:nowrap;min-width:26px;}
+    .ap-btn{
+      font-size:10px;font-family:'Share Tech Mono',monospace;
+      padding:4px 6px;border-radius:7px;flex:1;justify-content:center;
+      border:1px solid var(--stroke2);color:var(--muted);background:rgba(0,0,0,.2);
+    }
+    .ap-btn.sel{
+      border-color:rgba(0,255,153,.45);color:var(--green);
+      background:rgba(0,255,153,.07);
+    }
+
+    /* Vol row */
+    .vol-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+    .vol-label{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);min-width:22px;}
+    input[type="range"]{
+      -webkit-appearance:none;appearance:none;
+      flex:1;height:4px;border-radius:999px;
+      background:rgba(255,255,255,.07);outline:none;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;width:12px;height:12px;
+      border-radius:50%;background:rgba(255,255,255,.8);
+      border:1px solid rgba(0,0,0,.4);cursor:pointer;
+    }
+    .vol-pct{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--muted);min-width:28px;text-align:right;}
+
+    .track-btns{display:flex;gap:5px;}
+    .track-btns button{flex:1;padding:7px 5px;font-size:11px;justify-content:center;border-radius:9px;}
+    .btn-muted{color:#ff8090;border-color:rgba(255,51,68,.35);}
+
+    .waveform{width:100%;height:28px;display:block;border-radius:6px;background:rgba(0,0,0,.2);margin-bottom:7px;opacity:.75;}
+
+    /* Rec progress bar */
+    .rec-progress-wrap{height:3px;border-radius:2px;background:rgba(255,255,255,.05);margin-bottom:6px;overflow:hidden;}
+    .rec-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--orange));transition:width .1s linear;}
+
+    footer{
+      max-width:1180px;margin:0 auto;padding:12px 20px 28px;
+      font-size:12px;color:var(--muted);line-height:1.7;border-top:1px solid var(--stroke);
+    }
+    code{background:rgba(0,0,0,.35);padding:2px 6px;border-radius:6px;font-family:'Share Tech Mono',monospace;}
+
+    .error-toast{
+      position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:rgba(255,51,68,.15);border:1px solid rgba(255,51,68,.4);
+      color:#ffaab0;padding:11px 20px;border-radius:12px;
+      font-size:13px;z-index:2000;max-width:90vw;text-align:center;display:none;
+    }
+
+    /* ─── TEMPO DISPLAY ─── */
+    .tempo-badge{
+      font-family:'Share Tech Mono',monospace;font-size:13px;
+      padding:6px 14px;border:1px solid rgba(0,207,255,.25);
+      background:rgba(0,207,255,.06);border-radius:10px;
+      color:var(--cyan);white-space:nowrap;letter-spacing:.05em;
+    }
+
+    /* ─── SYNC DEBUG PANEL ─── */
+    #syncDebug{
+      position:fixed;bottom:16px;right:16px;z-index:900;
+      background:rgba(6,8,15,.92);border:1px solid rgba(0,207,255,.2);
+      border-radius:12px;padding:12px 16px;
+      font-family:'Share Tech Mono',monospace;font-size:11px;
+      color:var(--muted);line-height:1.8;min-width:200px;
+      backdrop-filter:blur(8px);
+    }
+    #syncDebug .sd-row{display:flex;justify-content:space-between;gap:16px;}
+    #syncDebug .sd-val{color:var(--cyan);}
+    #syncDebug .sd-val.hot{color:var(--green);}
+    #syncDebug .sd-val.warn{color:var(--orange);}
+    #syncDebug .sd-val.rec{color:var(--red);}
+    #syncDebug h4{color:rgba(255,255,255,.25);font-size:9px;letter-spacing:.15em;margin-bottom:4px;}
+
+    /* ─── COUNTDOWN: precise bar/beat position bar ─── */
+    .cd-position-bar{
+      width:180px;height:6px;border-radius:3px;
+      background:rgba(255,170,0,.12);border:1px solid rgba(255,170,0,.2);
+      margin-top:10px;overflow:hidden;position:relative;
+    }
+    .cd-position-fill{
+      height:100%;border-radius:3px;
+      background:linear-gradient(90deg,rgba(255,170,0,.6),var(--orange));
+      transition:width .08s linear;
+    }
+    .cd-position-bar .cd-bar-tick{
+      position:absolute;top:0;bottom:0;width:1px;
+      background:rgba(255,170,0,.35);
+    }
+  </style>
+</head>
+<body>
+
+<div class="error-toast" id="toast"></div>
+
+<!-- Sticky mini metro bar (solo LED, appare quando metro-bar esce dallo schermo) -->
+<div id="stickyMetro">
+  <span class="metro-label" style="color:var(--muted);">METRO</span>
+  <div class="led-strip" id="ledStripSticky"></div>
+  <div class="beat-num" id="beatNumSticky">—</div>
+</div>
+
+<!-- Big countdown overlay -->
+<div id="countdownOverlay">
+  <div class="cd-ring">
+    <div class="cd-number" id="cdBigNum">2</div>
+    <div class="cd-label" id="cdBigLabel">COUNT-IN</div>
+    <div class="cd-bars" id="cdBars"></div>
+    <div class="cd-position-bar" id="cdPosBар">
+      <div class="cd-position-fill" id="cdPosFill" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sync debug panel -->
+<div id="syncDebug">
+  <h4>SYNC MONITOR</h4>
+  <div class="sd-row"><span>PHASE</span><span class="sd-val" id="dbPhase">idle</span></div>
+  <div class="sd-row"><span>BEAT</span><span class="sd-val" id="dbBeat">—</span></div>
+  <div class="sd-row"><span>BAR</span><span class="sd-val" id="dbBar">—</span></div>
+  <div class="sd-row"><span>CD ELAPSED</span><span class="sd-val" id="dbCdEl">—</span></div>
+  <div class="sd-row"><span>CD TOTAL</span><span class="sd-val" id="dbCdTot">—</span></div>
+  <div class="sd-row"><span>REC TRACKS</span><span class="sd-val rec" id="dbRec">0</span></div>
+  <div class="sd-row"><span>BPM</span><span class="sd-val hot" id="dbBpm">—</span></div>
+</div>
+
+<header>
+  <div class="logo">MARACA<span>LOOP</span> <span style="font-size:12px;color:var(--muted);margin-left:6px;">v2</span></div>
+  <div class="top-controls">
+    <select id="sourceSelect">
+      <option value="mic">🎙 Microfono</option>
+      <option value="screen">🖥 Schermo / Tab</option>
+    </select>
+    <button class="btn-init" id="btnInit">⚡ Attiva Audio</button>
+    <button class="btn-play" id="btnPlayAll" disabled>▶ Play All</button>
+    <button class="btn-stop" id="btnStopAll" disabled>■ Stop All</button>
+    <button id="btnClearAll" disabled>✕ Clear All</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="badge"><span class="dot" id="dotAudio"></span> AudioContext</span>
+  <span class="badge"><span class="dot" id="dotInput"></span> Ingresso</span>
+  <span class="badge">Loop: <b id="masterLen">—</b></span>
+  <span class="badge">SR: <b id="sr">—</b></span>
+  <span class="tempo-badge" id="tempoDisplay">— BPM / — BAR</span>
+</div>
+
+<div class="metro-bar">
+  <span class="metro-label">METRONOMO</span>
+  <div class="led-strip" id="ledStrip"></div>
+  <div class="beat-num" id="beatNum">—</div>
+  <div class="bpm-wrap">
+    <label for="bpmInput">BPM</label>
+    <input type="number" id="bpmInput" min="40" max="240" value="120" step="1"/>
+  </div>
+  <div class="bpm-wrap">
+    <label for="sigInput">SIG</label>
+    <select id="sigInput" style="width:60px;padding:7px 8px;">
+      <option value="4">4/4</option>
+      <option value="3">3/4</option>
+      <option value="6">6/8</option>
+    </select>
+  </div>
+  <button class="metro-toggle" id="btnMetro">▶ Start</button>
+</div>
+
+<main id="grid"></main>
+
+<footer>
+  ⚠ Usa <code>https://</code> o <code>localhost</code> per il microfono. &nbsp;|&nbsp;
+  Il <b>count-in 2 batt.</b> fa: 4/4 + 4/4 poi ● REC. &nbsp;|&nbsp;
+  <b>BARS</b>: sceglie quante battute registrare (auto-stop). &nbsp;|&nbsp;
+  La prima traccia definisce la durata del loop master.
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   METRONOME ENGINE — AudioContext-based (Web Audio)
+═══════════════════════════════════════════════════════ */
+const LEDS = 16;
+let metroRunning = false;
+let bpm = 120;
+let beatsPerBar = 4;         // time signature numerator
+let currentBeat = -1;        // 0-based within LEDS
+let lastBeatTime = 0;
+let metroSchedulerRAF = null;
+let nextBeatAudioTime = 0;
+let metroAudioCtx = null;    // dedicated ctx for timing
+const LOOK_AHEAD = 0.08;     // seconds
+const SCHEDULE_INTERVAL = 25; // ms
+
+const ledStrip  = document.getElementById("ledStrip");
+const bpmInput  = document.getElementById("bpmInput");
+const sigInput  = document.getElementById("sigInput");
+const btnMetro  = document.getElementById("btnMetro");
+const beatNum   = document.getElementById("beatNum");
+const tempoDisplay = document.getElementById("tempoDisplay");
+const countdownOverlay = document.getElementById("countdownOverlay");
+const cdBigNum  = document.getElementById("cdBigNum");
+const cdBigLabel= document.getElementById("cdBigLabel");
+const cdBarsEl  = document.getElementById("cdBars");
+
+const ledEls = [];
+for(let i=0;i<LEDS;i++){
+  if(i>0&&i%4===0){
+    const sep=document.createElement("div");sep.className="led-sep";
+    ledStrip.appendChild(sep);
+  }
+  const d=document.createElement("div");
+  const isAccent=(i%beatsPerBar===0);
+  d.className="led"+(isAccent?" beat1":"");
+  if(isAccent){
+    const n=document.createElement("div");n.className="beat-n";
+    n.textContent=(i/4+1);d.appendChild(n);
+  }
+  ledStrip.appendChild(d);
+  ledEls.push(d);
+}
+
+function setLed(beat,isCountdown=false){
+  ledEls.forEach((l,i)=>{
+    l.classList.remove("lit","countdown");
+    if(i===beat){
+      if(isCountdown) l.classList.add("countdown");
+      else l.classList.add("lit");
+    }
+  });
+  if(beat>=0){
+    beatNum.textContent=(beat+1);
+    beatNum.classList.add("flash");
+    clearTimeout(beatNum._ft);
+    beatNum._ft=setTimeout(()=>beatNum.classList.remove("flash"),80);
+  } else {
+    beatNum.textContent="—";beatNum.classList.remove("flash");
+  }
+}
+
+// Global countdown state
+let globalCountdownActive = false;
+let globalCountdownBeat = 0;   // current beat in countdown (0 = first beat of bar 1)
+let globalCountdownBars = 2;   // always 2 bars = 2*beatsPerBar beats
+let globalCountdownDone = false;
+let pendingTracksForCountdown = []; // tracks waiting for global countdown to finish
+
+function updateTempoDisplay(){
+  tempoDisplay.textContent=`${bpm} BPM / ${beatsPerBar}/4`;
+}
+updateTempoDisplay();
+
+function scheduleMetroBeat(audioTime){
+  currentBeat=(currentBeat+1)%LEDS;
+  // notifyTracksBeat first (may change countdownPhase)
+  notifyTracksBeat(currentBeat, audioTime);
+  // Visual update AFTER state change so LED color reflects correct phase
+  const isCD = (countdownPhase==="counting");
+  setLed(currentBeat, isCD);
+  updateDebugPanel();
+}
+
+function metroScheduler(){
+  if(!metroAudioCtx) return;
+  while(nextBeatAudioTime < metroAudioCtx.currentTime + LOOK_AHEAD){
+    scheduleMetroBeat(nextBeatAudioTime);
+    nextBeatAudioTime += 60/bpm;
+  }
+  metroSchedulerRAF = setTimeout(metroScheduler, SCHEDULE_INTERVAL);
+}
+
+function startMetro(){
+  if(metroRunning) return;
+  if(!metroAudioCtx) metroAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  metroRunning=true;
+  currentBeat=-1;
+  nextBeatAudioTime=metroAudioCtx.currentTime+0.01;
+  metroSchedulerRAF=setTimeout(metroScheduler,0);
+  btnMetro.textContent="■ Stop";btnMetro.classList.add("active");
+}
+function stopMetro(){
+  if(!metroRunning) return;
+  clearTimeout(metroSchedulerRAF);metroSchedulerRAF=null;
+  metroRunning=false;currentBeat=-1;setLed(-1);
+  btnMetro.textContent="▶ Start";btnMetro.classList.remove("active");
+}
+function restartMetro(){
+  if(!metroRunning){startMetro();return;}
+  clearTimeout(metroSchedulerRAF);metroSchedulerRAF=null;
+  currentBeat=-1;
+  if(metroAudioCtx) nextBeatAudioTime=metroAudioCtx.currentTime+0.01;
+  metroSchedulerRAF=setTimeout(metroScheduler,0);
+}
+
+bpmInput.addEventListener("change",()=>{
+  let v=parseInt(bpmInput.value)||120;
+  v=Math.max(40,Math.min(240,v));
+  bpmInput.value=v;bpm=v;
+  updateTempoDisplay();
+  if(metroRunning) restartMetro();
+});
+bpmInput.addEventListener("keydown",e=>{if(e.key==="Enter")bpmInput.blur();});
+sigInput.addEventListener("change",()=>{
+  beatsPerBar=parseInt(sigInput.value)||4;
+  updateTempoDisplay();
+});
+btnMetro.addEventListener("click",()=>{metroRunning?stopMetro():startMetro();});
+
+/* ═══════════════════════════════════════════════════════
+   GLOBAL 2-BAR COUNTDOWN LOGIC
+   When any track arms count-in, global countdown runs once.
+   All armed tracks then start recording simultaneously.
+═══════════════════════════════════════════════════════ */
+let countdownBeatsTotal = 0;
+let countdownBeatsElapsed = 0;
+let countdownPhase = "idle"; // idle | waiting_bar1 | counting | done
+
+function armGlobalCountdown(track){
+  pendingTracksForCountdown.push(track);
+  if(countdownPhase==="idle"){
+    countdownPhase="waiting_bar1";
+    countdownBeatsTotal=2*beatsPerBar; // 2 bars
+    countdownBeatsElapsed=0;
+    globalCountdownDone=false;
+    if(!metroRunning) startMetro();
+    else restartMetro(); // resync to beat 0
+    showCountdownOverlay(countdownBeatsTotal,0);
+  }
+}
+
+function cancelGlobalCountdown(){
+  countdownPhase="idle";
+  pendingTracksForCountdown=[];
+  hideCountdownOverlay();
+}
+
+function onCountdownComplete(){
+  countdownPhase="done";
+  hideCountdownOverlay();
+  // Start recording on all pending tracks
+  for(const t of pendingTracksForCountdown){
+    t.countinArmed=false;t.countinActive=false;t.countinRemaining=0;
+    clearCountinLeds(t);
+    startRecordingNow(t);
+  }
+  pendingTracksForCountdown=[];
+  setTimeout(()=>{countdownPhase="idle";},100);
+}
+
+function showCountdownOverlay(total,elapsed){
+  const barsTotal=Math.ceil(total/beatsPerBar);
+  const barsElapsed=Math.floor(elapsed/beatsPerBar);
+  const beatInBar=(elapsed%beatsPerBar); // 0-based current beat within bar
+  const barsLeft=barsTotal-barsElapsed;
+
+  cdBigNum.textContent=barsLeft>0?barsLeft:"GO!";
+  cdBigLabel.textContent=barsLeft>0?`BAR ${barsElapsed+1}/${barsTotal} — BEAT ${beatInBar+1}/${beatsPerBar}`:"● REC!";
+
+  // Position progress bar — fills left to right as countdown progresses
+  const pct=elapsed/total*100;
+  const fillEl=document.getElementById("cdPosFill");
+  if(fillEl) fillEl.style.width=pct+"%";
+
+  // Build beat grid: dots per bar, 2 bars, separated
+  cdBarsEl.innerHTML="";
+  for(let b=0;b<barsTotal;b++){
+    if(b>0){
+      const sep=document.createElement("div");
+      sep.className="cd-bar-sep";
+      cdBarsEl.appendChild(sep);
+    }
+    const grp=document.createElement("div");
+    grp.className="cd-bar-group";
+    for(let beat=0;beat<beatsPerBar;beat++){
+      const d=document.createElement("div");
+      const globalBeat=b*beatsPerBar+beat; // 0-based from start
+      if(globalBeat < elapsed-1){
+        d.className="cd-beat-dot done";
+      } else if(globalBeat === elapsed-1){
+        // Most recently completed beat — active/pulsing
+        d.className="cd-beat-dot active";
+      } else {
+        d.className="cd-beat-dot";
+      }
+      grp.appendChild(d);
+    }
+    cdBarsEl.appendChild(grp);
+  }
+  countdownOverlay.classList.add("show");
+  updateDebugPanel();
+}
+function hideCountdownOverlay(){
+  countdownOverlay.classList.remove("show");
+  const fillEl=document.getElementById("cdPosFill");
+  if(fillEl) fillEl.style.width="0%";
+}
+
+function updateDebugPanel(){
+  const dbPhase=document.getElementById("dbPhase");
+  const dbBeat=document.getElementById("dbBeat");
+  const dbBar=document.getElementById("dbBar");
+  const dbCdEl=document.getElementById("dbCdEl");
+  const dbCdTot=document.getElementById("dbCdTot");
+  const dbRec=document.getElementById("dbRec");
+  const dbBpm=document.getElementById("dbBpm");
+  if(!dbPhase) return;
+
+  const barOfBeat=Math.floor(currentBeat/beatsPerBar)+1;
+  const beatInBar=(currentBeat%beatsPerBar)+1;
+
+  dbPhase.textContent=countdownPhase;
+  dbPhase.className="sd-val"+(countdownPhase==="counting"?" warn":(countdownPhase==="idle"?"":"hot"));
+  dbBeat.textContent=currentBeat>=0?`${currentBeat+1}/${LEDS}`:"—";
+  dbBar.textContent=currentBeat>=0?`${barOfBeat} beat ${beatInBar}/${beatsPerBar}`:"—";
+  dbCdEl.textContent=countdownPhase==="counting"?`${countdownBeatsElapsed}/${countdownBeatsTotal}`:"—";
+  dbCdTot.textContent=countdownPhase!=="idle"?`${countdownBeatsTotal} beats (2 bar)`:"—";
+  const recCount=tracks.filter(t=>t.isRecording).length;
+  dbRec.textContent=recCount>0?`${recCount} ● REC`:"0";
+  dbRec.className="sd-val"+(recCount>0?" rec":"");
+  dbBpm.textContent=`${bpm} BPM`;
+}
+
+/* Beat notification */
+function notifyTracksBeat(beat, audioTime){
+  // ── Global countdown logic ──────────────────────────────
+  if(countdownPhase==="waiting_bar1"){
+    // Start counting on beat 0 (downbeat) — include this beat in the countdown
+    if(beat===0){
+      countdownPhase="counting";
+      countdownBeatsElapsed=1; // beat 0 is the FIRST countdown beat
+      showCountdownOverlay(countdownBeatsTotal, countdownBeatsElapsed);
+      // Don't start recording yet
+      return;
+    }
+    return; // still waiting for bar downbeat
+  }
+  if(countdownPhase==="counting"){
+    countdownBeatsElapsed++;
+    showCountdownOverlay(countdownBeatsTotal, countdownBeatsElapsed);
+    // Update UI of all pending tracks so they show current bar/beat
+    for(const t of pendingTracksForCountdown) updateTrackUI(t);
+    if(countdownBeatsElapsed>=countdownBeatsTotal){
+      onCountdownComplete();
+      return;
+    }
+    return; // still counting, don't process recording beats
+  }
+
+  // Per-track count-in (legacy / direct armed without global)
+  for(const t of tracks){
+    if(!t.countinArmed&&!t.countinActive) continue;
+    if(t.countinArmed&&!t.countinActive){
+      if(beat===0){t.countinActive=true;t.countinRemaining=t.countinBeats;}
+      else continue;
+    }
+    if(t.countinActive){
+      t.countinRemaining--;
+      refreshCountinLeds(t);refreshCountinSvg(t);
+      if(t.ui.info) t.ui.info.textContent=`count-in: ${Math.max(0,t.countinRemaining)} beat`;
+      if(t.countinRemaining<=0){
+        t.countinArmed=false;t.countinActive=false;
+        startRecordingNow(t);
+      } else {
+        updateTrackUI(t);
+      }
+    }
+  }
+
+  // Auto-stop recording when bars target reached
+  for(const t of tracks){
+    if(!t.isRecording||t.barsTarget<=0) continue;
+    t.recBeatCount=(t.recBeatCount||0)+1;
+    const totalBeats=t.barsTarget*beatsPerBar;
+    const progress=Math.min(t.recBeatCount/totalBeats,1);
+    updateRecProgress(t,progress);
+    if(t.recBeatCount>=totalBeats){
+      t.barsTarget=0;
+      stopRecording(t);
+    } else {
+      // Live UI update — show current bar/beat position
+      updateTrackUI(t);
+    }
+  }
+}
+
+function updateRecProgress(t,pct){
+  if(t.ui.recProgressBar) t.ui.recProgressBar.style.width=(pct*100)+"%";
+  // update led bar
+  if(t.ui.trackLeds){
+    const n=t.ui.trackLeds.length;
+    t.ui.trackLeds.forEach((l,i)=>{
+      l.classList.remove("lit","done","rec");
+      if(i/n<pct) l.classList.add("rec");
+    });
+  }
+}
+
+function refreshCountinLeds(t){
+  if(!t.ui.trackLeds) return;
+  const total=t.countinBeats,done=total-t.countinRemaining;
+  const leds=t.ui.trackLeds,n=leds.length;
+  leds.forEach((l,i)=>{
+    const thresh=Math.round((i+1)*total/n),prev=Math.round(i*total/n);
+    l.classList.remove("lit","done","rec");
+    if(done>=thresh) l.classList.add("done");
+    else if(done>prev) l.classList.add("lit");
+  });
+}
+function clearCountinLeds(t){
+  if(!t.ui.trackLeds) return;
+  t.ui.trackLeds.forEach(l=>l.classList.remove("lit","done","rec"));
+}
+function refreshCountinSvg(t){
+  const svg=t.ui.btnMain?.querySelector("svg");if(!svg) return;
+  const n=Math.max(0,t.countinRemaining);
+  svg.innerHTML=`<text x="17" y="23" text-anchor="middle"
+    font-family="Share Tech Mono,monospace" font-size="16" font-weight="700"
+    fill="rgba(255,170,0,.95)">${n>0?n:"GO!"}</text>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   AUDIO ENGINE
+═══════════════════════════════════════════════════════ */
+let audioCtx=null,inputStream=null,masterGain=null;
+let isInitialized=false,masterLoopSeconds=null;
+const TRACKS=8,tracks=[];
+
+const grid       =document.getElementById("grid");
+const btnInit    =document.getElementById("btnInit");
+const btnPlayAll =document.getElementById("btnPlayAll");
+const btnStopAll =document.getElementById("btnStopAll");
+const btnClearAll=document.getElementById("btnClearAll");
+const sourceSelect=document.getElementById("sourceSelect");
+const dotAudio   =document.getElementById("dotAudio");
+const dotInput   =document.getElementById("dotInput");
+const masterLenEl=document.getElementById("masterLen");
+const srEl       =document.getElementById("sr");
+const toastEl    =document.getElementById("toast");
+
+function showToast(msg,dur=4500){
+  toastEl.textContent=msg;toastEl.style.display="block";
+  clearTimeout(toastEl._t);
+  toastEl._t=setTimeout(()=>toastEl.style.display="none",dur);
+}
+function fmtSec(s){return(s==null||!isFinite(s))?"—":s<10?s.toFixed(2)+"s":s.toFixed(1)+"s";}
+function setDots(){
+  dotAudio.className="dot"+(audioCtx&&audioCtx.state==="running"?" on":"");
+  dotInput.className="dot"+(inputStream?" on":"");
+}
+function setMasterLoop(sec){masterLoopSeconds=sec;masterLenEl.textContent=fmtSec(sec);}
+function updateGlobalButtons(){
+  const anyBuf=tracks.some(t=>!!t.buffer);
+  const anyPlay=tracks.some(t=>t.isPlaying);
+  btnPlayAll.disabled=!isInitialized||!anyBuf;
+  btnStopAll.disabled=!isInitialized||!anyPlay;
+  btnClearAll.disabled=!isInitialized||!anyBuf;
+}
+
+async function blobToAudioBuffer(blob){
+  const ab=await blob.arrayBuffer();
+  return await audioCtx.decodeAudioData(ab);
+}
+function quantizeBuffer(buf){
+  if(masterLoopSeconds==null) return buf;
+  const sr=buf.sampleRate,target=Math.round(masterLoopSeconds*sr),chs=buf.numberOfChannels;
+  const out=audioCtx.createBuffer(chs,target,sr);
+  for(let c=0;c<chs;c++){
+    const inp=buf.getChannelData(c),outp=out.getChannelData(c);
+    if(inp.length>=target) outp.set(inp.subarray(0,target));
+    else outp.set(inp);
+  }
+  return out;
+}
+function drawWaveform(canvas,audioBuffer){
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width=canvas.offsetWidth*devicePixelRatio;
+  const H=canvas.height=canvas.offsetHeight*devicePixelRatio;
+  ctx.clearRect(0,0,W,H);if(!audioBuffer) return;
+  const data=audioBuffer.getChannelData(0);
+  const step=Math.ceil(data.length/W),mid=H/2;
+  ctx.strokeStyle="rgba(0,207,255,.7)";ctx.lineWidth=1;ctx.beginPath();
+  for(let x=0;x<W;x++){
+    let mn=1,mx=-1;
+    for(let j=0;j<step;j++){const v=data[x*step+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
+    ctx.moveTo(x,mid+mn*mid*.9);ctx.lineTo(x,mid+mx*mid*.9);
+  }
+  ctx.stroke();
+}
+
+function stopPlayback(t){
+  if(t.source){try{t.source.stop();}catch{}try{t.source.disconnect();}catch{}t.source=null;}
+  t.isPlaying=false;updateTrackUI(t);updateGlobalButtons();
+}
+function startPlayback(t){
+  if(!t.buffer||!audioCtx) return;
+  stopPlayback(t);
+  const src=audioCtx.createBufferSource();
+  src.buffer=t.buffer;src.loop=true;src.loopStart=0;src.loopEnd=t.buffer.duration;
+  src.connect(t.gainNode);src.start();
+  t.source=src;t.isPlaying=true;updateTrackUI(t);updateGlobalButtons();
+}
+function clearTrack(t){
+  stopPlayback(t);abortRecording(t);cancelCountin(t);
+  t.buffer=null;t.barsTarget=0;t.recBeatCount=0;
+  if(t.ui.recProgressBar) t.ui.recProgressBar.style.width="0%";
+  drawWaveform(t.ui.canvas,null);updateTrackUI(t);updateGlobalButtons();
+}
+function abortRecording(t){
+  if(t.mediaRec&&t.isRecording){
+    t.mediaRec.ondataavailable=null;t.mediaRec.onstop=null;
+    try{t.mediaRec.stop();}catch{}
+  }
+  t.isRecording=false;t.recChunks=[];t.barsTarget=0;t.recBeatCount=0;
+}
+function cancelCountin(t){
+  t.countinArmed=false;t.countinActive=false;t.countinRemaining=0;
+  clearCountinLeds(t);
+  // Remove from pending global countdown
+  const idx=pendingTracksForCountdown.indexOf(t);
+  if(idx>=0) pendingTracksForCountdown.splice(idx,1);
+  if(pendingTracksForCountdown.length===0 && countdownPhase!=="idle") cancelGlobalCountdown();
+}
+
+// Calculate bar duration in seconds
+function barDuration(){return(beatsPerBar*(60/bpm));}
+// Calculate loop seconds for N bars
+function barsToSeconds(bars){return bars*barDuration();}
+
+function startRecordingNow(t){
+  if(!inputStream){showToast("Prima attiva l'audio!");return;}
+  const mimes=["audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus","audio/ogg","audio/mp4"];
+  const mime=mimes.find(m=>MediaRecorder.isTypeSupported(m))||"";
+
+  // Calculate target duration
+  const bars=t.barsToRecord||4;
+  const targetSec=barsToSeconds(bars);
+  t.barsTarget=bars;
+  t.recBeatCount=0;
+
+  // Set master loop if not set
+  if(masterLoopSeconds==null) setMasterLoop(targetSec);
+
+  try{
+    t.recChunks=[];
+    const options=mime?{mimeType:mime}:{};
+    t.mediaRec=new MediaRecorder(inputStream,options);
+    t.mediaRec.ondataavailable=(e)=>{if(e.data&&e.data.size>0) t.recChunks.push(e.data);};
+    t.mediaRec.onstop=async()=>{
+      t.isRecording=false;t.barsTarget=0;t.recBeatCount=0;
+      if(t.ui.recProgressBar) t.ui.recProgressBar.style.width="100%";
+      if(!t.recChunks.length){showToast("Registrazione vuota.");updateTrackUI(t);updateGlobalButtons();return;}
+      try{
+        const blob=new Blob(t.recChunks,{type:mime||"audio/webm"});
+        t.recChunks=[];
+        let buf=await blobToAudioBuffer(blob);
+        if(buf.duration<0.05){showToast("Troppo breve.");updateTrackUI(t);updateGlobalButtons();return;}
+        if(masterLoopSeconds!=null) t.buffer=quantizeBuffer(buf);
+        else{setMasterLoop(buf.duration);t.buffer=buf;}
+        drawWaveform(t.ui.canvas,t.buffer);
+        if(t.ui.recProgressBar) t.ui.recProgressBar.style.width="0%";
+        clearCountinLeds(t);
+        // Auto-start playback if enabled
+        if(t.autoPlay) startPlayback(t);
+      }catch(err){console.error(err);showToast("Errore decodifica: "+err.message);}
+      updateTrackUI(t);updateGlobalButtons();
+    };
+    t.mediaRec.onerror=(e)=>{
+      showToast("Errore MediaRecorder: "+(e.error?.message||e));
+      t.isRecording=false;updateTrackUI(t);updateGlobalButtons();
+    };
+    t.mediaRec.start(100);
+    t.isRecording=true;
+    clearCountinLeds(t);
+    updateTrackUI(t);updateGlobalButtons();
+    showToast(`● REC — ${bars} batt. (${targetSec.toFixed(1)}s)`,3000);
+  }catch(err){showToast("Impossibile registrare: "+err.message);}
+}
+
+function stopRecording(t){
+  if(!t.mediaRec||!t.isRecording) return;
+  t.barsTarget=0;
+  try{t.mediaRec.stop();}
+  catch(err){t.isRecording=false;updateTrackUI(t);}
+}
+
+function toggleMainButton(t){
+  if(!isInitialized){showToast("Prima clicca ⚡ Attiva Audio");return;}
+  const inCountin=t.countinArmed||t.countinActive;
+  if(inCountin){cancelCountin(t);updateTrackUI(t);return;}
+
+  if(!t.buffer){
+    if(!t.isRecording){
+      if(t.useCountin){
+        // use global 2-bar countdown
+        t.countinArmed=true;t.countinActive=false;t.countinRemaining=0;
+        updateTrackUI(t);updateGlobalButtons();
+        armGlobalCountdown(t);
+      } else {
+        startRecordingNow(t);
+      }
+    } else {
+      stopRecording(t);
+    }
+  } else {
+    if(!t.isPlaying) startPlayback(t);
+    else stopPlayback(t);
+  }
+}
+
+/* ─── TRACK UI ─── */
+function updateTrackUI(t){
+  const{el,btnMain,stateTag,info,clearBtn}=t.ui;
+  const inCountin=t.countinArmed||t.countinActive;
+  el.classList.toggle("is-rec",t.isRecording);
+  el.classList.toggle("is-countin",inCountin&&!t.isRecording);
+  el.classList.toggle("is-play",t.isPlaying&&!t.isRecording&&!inCountin);
+  el.classList.toggle("has-buffer",!!t.buffer&&!t.isPlaying&&!t.isRecording&&!inCountin);
+
+  if(inCountin){
+    stateTag.textContent="COUNT…";stateTag.className="track-state s-countin";
+    const cdBar=Math.floor(countdownBeatsElapsed/beatsPerBar)+1;
+    const cdBeatInBar=(countdownBeatsElapsed%beatsPerBar)+1;
+    info.textContent=`⏳ bar ${cdBar}/2 — beat ${cdBeatInBar}/${beatsPerBar}`;
+  } else if(t.isRecording){
+    const bars=t.barsToRecord||4;
+    const totalBeats=bars*beatsPerBar;
+    const done=t.recBeatCount||0;
+    const rem=totalBeats-done;
+    const recBar=Math.floor(done/beatsPerBar)+1;
+    const recBeatInBar=(done%beatsPerBar)+1;
+    stateTag.textContent="● REC";stateTag.className="track-state s-rec";
+    info.textContent=`● bar ${recBar}/${bars} beat ${recBeatInBar} — ${Math.max(0,rem)} left`;
+  } else if(t.isPlaying){
+    stateTag.textContent="▶ PLAY";stateTag.className="track-state s-play";
+    info.textContent=fmtSec(t.buffer?.duration);
+  } else if(t.buffer){
+    stateTag.textContent="■ READY";stateTag.className="track-state s-ready";
+    info.textContent=fmtSec(t.buffer.duration);
+  } else {
+    stateTag.textContent="IDLE";stateTag.className="track-state";
+    const barsLabel=t.barsToRecord||4;
+    info.textContent=`${barsLabel} batt. — premi per rec`;
+  }
+
+  // SVG icon
+  const svg=btnMain.querySelector("svg");
+  if(inCountin){
+    svg.innerHTML=`<text x="17" y="22" text-anchor="middle"
+      font-family="Share Tech Mono,monospace" font-size="14" font-weight="700"
+      fill="rgba(255,170,0,.95)">CD</text>`;
+  } else if(!t.buffer){
+    if(t.isRecording)
+      svg.innerHTML=`<rect x="8" y="8" width="18" height="18" rx="3" fill="rgba(255,51,68,.9)" stroke="none"/>`;
+    else
+      svg.innerHTML=`<circle cx="17" cy="17" r="9" fill="rgba(255,51,68,.85)" stroke="none"/>`;
+  } else {
+    if(t.isPlaying)
+      svg.innerHTML=`<rect x="8" y="8" width="7" height="18" rx="2" fill="rgba(0,207,255,.9)" stroke="none"/>
+                     <rect x="19" y="8" width="7" height="18" rx="2" fill="rgba(0,207,255,.9)" stroke="none"/>`;
+    else
+      svg.innerHTML=`<polygon points="10,8 28,17 10,26" fill="rgba(0,255,153,.9)" stroke="none"/>`;
+  }
+
+  clearBtn.disabled=!t.buffer&&!t.isRecording&&!inCountin;
+  updateBarBtns(t);
+  updateCiBtns(t);
+  updateApBtns(t);
+}
+
+function updateBarBtns(t){
+  if(!t.ui.barBtns) return;
+  const dis=t.isRecording||t.countinArmed||t.countinActive;
+  t.ui.barBtns.forEach(b=>{
+    b.disabled=dis;
+    b.classList.toggle("sel",parseInt(b.dataset.bars)===t.barsToRecord);
+  });
+}
+function updateCiBtns(t){
+  if(!t.ui.ciOn) return;
+  const dis=t.isRecording||t.countinArmed||t.countinActive;
+  [t.ui.ciOff,t.ui.ciOn].forEach(b=>b.disabled=dis);
+  t.ui.ciOff.classList.toggle("sel",!t.useCountin);
+  t.ui.ciOn.classList.toggle("sel",t.useCountin);
+}
+function updateApBtns(t){
+  if(!t.ui.apOn) return;
+  t.ui.apOff.classList.toggle("sel",!t.autoPlay);
+  t.ui.apOn.classList.toggle("sel",t.autoPlay);
+}
+
+function createTrack(i){
+  return{
+    index:i,buffer:null,source:null,gainNode:null,
+    mediaRec:null,recChunks:[],
+    isRecording:false,isPlaying:false,isMuted:false,_prevVol:0.85,
+    countinArmed:false,countinActive:false,countinRemaining:0,countinBeats:0,
+    useCountin:true,   // default: use 2-bar global countdown
+    autoPlay:true,     // default: auto-start playback after recording
+    barsToRecord:4,    // default: 4 bars
+    barsTarget:0,      // active target (0 = manual stop)
+    recBeatCount:0,    // beats elapsed during recording
+    ui:{}
+  };
+}
+
+const BAR_OPTIONS=[1,2,4,8,16];
+
+function buildTrackCard(t){
+  const el=document.createElement("section");
+  el.className="track";
+  const ledsHtml=Array.from({length:8},()=>`<div class="t-led"></div>`).join("");
+  const barBtnsHtml=BAR_OPTIONS.map(n=>`<button class="bar-btn${n===4?" sel":""}" data-bars="${n}">${n}</button>`).join("");
+
+  el.innerHTML=`
+    <div class="track-glow"></div>
+    <div class="track-head">
+      <div class="track-num">${String(t.index+1).padStart(2,"0")}</div>
+      <span class="track-state" id="st">IDLE</span>
+    </div>
+    <div class="track-leds" id="tls">${ledsHtml}</div>
+    <canvas class="waveform" id="cvs" width="200" height="28"></canvas>
+    <div class="rec-progress-wrap"><div class="rec-progress-bar" id="rpb"></div></div>
+    <div class="btn-main-wrap">
+      <button class="btn-main" id="bm" aria-label="Record/Play">
+        <div class="spin-ring"></div>
+        <svg viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="17" cy="17" r="9" fill="rgba(255,51,68,.85)" stroke="none"/>
+        </svg>
+      </button>
+    </div>
+    <div class="track-info" id="inf">premi per registrare</div>
+
+    <div class="bars-row">
+      <span class="bars-lbl">BARS</span>
+      ${barBtnsHtml}
+    </div>
+
+    <div class="countin-row">
+      <span class="ci-lbl">COUNT-IN</span>
+      <button class="ci-btn" id="ciOff">OFF</button>
+      <button class="ci-btn sel" id="ciOn">2🎵</button>
+    </div>
+
+    <div class="autoplay-row">
+      <span class="ap-lbl">AUTO▶</span>
+      <button class="ap-btn" id="apOff">OFF</button>
+      <button class="ap-btn sel" id="apOn">▶ POST REC</button>
+    </div>
+
+    <div class="vol-row">
+      <span class="vol-label">VOL</span>
+      <input type="range" id="vol" min="0" max="1" step="0.01" value="0.85"/>
+      <span class="vol-pct" id="vp">85%</span>
+    </div>
+    <div class="track-btns">
+      <button id="muteBtn">Mute</button>
+      <button id="clearBtn" disabled>Clear</button>
+    </div>
+  `;
+
+  const btnMain=el.querySelector("#bm");
+  const stateTag=el.querySelector("#st");
+  const info=el.querySelector("#inf");
+  const vol=el.querySelector("#vol");
+  const volpct=el.querySelector("#vp");
+  const muteBtn=el.querySelector("#muteBtn");
+  const clearBtn=el.querySelector("#clearBtn");
+  const canvas=el.querySelector("#cvs");
+  const recProgressBar=el.querySelector("#rpb");
+  const ciOff=el.querySelector("#ciOff");
+  const ciOn=el.querySelector("#ciOn");
+  const apOff=el.querySelector("#apOff");
+  const apOn=el.querySelector("#apOn");
+  const trackLeds=Array.from(el.querySelector("#tls").querySelectorAll(".t-led"));
+  const barBtns=Array.from(el.querySelectorAll(".bar-btn"));
+
+  t.ui={el,btnMain,stateTag,info,vol,volpct,muteBtn,clearBtn,canvas,
+        ciOff,ciOn,apOff,apOn,trackLeds,barBtns,recProgressBar};
+
+  // Bar buttons
+  barBtns.forEach(b=>{
+    b.addEventListener("click",()=>{
+      t.barsToRecord=parseInt(b.dataset.bars);
+      updateBarBtns(t);
+      updateTrackUI(t);
+    });
+  });
+
+  // Count-in toggle
+  ciOff.addEventListener("click",()=>{t.useCountin=false;updateCiBtns(t);});
+  ciOn.addEventListener("click",()=>{t.useCountin=true;updateCiBtns(t);});
+
+  // Autoplay toggle
+  apOff.addEventListener("click",()=>{t.autoPlay=false;updateApBtns(t);});
+  apOn.addEventListener("click",()=>{t.autoPlay=true;updateApBtns(t);});
+
+  btnMain.addEventListener("click",()=>toggleMainButton(t));
+  btnMain.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();btnMain.click();}});
+
+  vol.addEventListener("input",()=>{
+    const v=parseFloat(vol.value);
+    volpct.textContent=Math.round(v*100)+"%";
+    if(t.gainNode) t.gainNode.gain.setTargetAtTime(v,audioCtx.currentTime,.01);
+    if(v>0.001) t.isMuted=false;
+  });
+
+  muteBtn.addEventListener("click",()=>{
+    if(!t.gainNode) return;
+    if(!t.isMuted){
+      t._prevVol=parseFloat(vol.value);
+      t.gainNode.gain.setTargetAtTime(0,audioCtx.currentTime,.01);
+      vol.value="0";volpct.textContent="0%";
+      t.isMuted=true;muteBtn.className="btn-muted";muteBtn.textContent="Unmute";
+    } else {
+      const pv=t._prevVol||0.85;
+      t.gainNode.gain.setTargetAtTime(pv,audioCtx.currentTime,.01);
+      vol.value=String(pv);volpct.textContent=Math.round(pv*100)+"%";
+      t.isMuted=false;muteBtn.className="";muteBtn.textContent="Mute";
+    }
+  });
+
+  clearBtn.addEventListener("click",()=>clearTrack(t));
+  updateTrackUI(t);
+  return el;
+}
+
+function buildUI(){
+  grid.innerHTML="";tracks.length=0;
+  for(let i=0;i<TRACKS;i++){
+    const t=createTrack(i);
+    tracks.push(t);
+    grid.appendChild(buildTrackCard(t));
+  }
+  updateGlobalButtons();
+}
+
+async function initAudio(){
+  if(isInitialized) return;
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  srEl.textContent=audioCtx.sampleRate+" Hz";
+  masterGain=audioCtx.createGain();
+  masterGain.gain.value=0.9;
+  masterGain.connect(audioCtx.destination);
+  const mode=sourceSelect.value;
+  if(mode==="mic"){
+    inputStream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  } else {
+    inputStream=await navigator.mediaDevices.getDisplayMedia({audio:true,video:true});
+  }
+  for(const t of tracks){
+    t.gainNode=audioCtx.createGain();
+    t.gainNode.gain.value=parseFloat(t.ui.vol.value);
+    t.gainNode.connect(masterGain);
+  }
+  await audioCtx.resume();
+  isInitialized=true;setDots();
+  btnInit.textContent="✓ Audio attivo";btnInit.disabled=true;
+  updateGlobalButtons();
+}
+
+btnInit.addEventListener("click",async()=>{
+  try{btnInit.textContent="…";btnInit.disabled=true;await initAudio();}
+  catch(e){console.error(e);btnInit.disabled=false;btnInit.textContent="⚡ Attiva Audio";showToast("Errore: "+(e?.message||e));}
+  finally{setDots();}
+});
+btnPlayAll.addEventListener("click",()=>{for(const t of tracks)if(t.buffer&&!t.isPlaying)startPlayback(t);updateGlobalButtons();});
+btnStopAll.addEventListener("click",()=>{
+  for(const t of tracks){
+    if(t.isPlaying) stopPlayback(t);
+    if(t.isRecording) stopRecording(t);
+    cancelCountin(t);
+  }
+  cancelGlobalCountdown();
+  updateGlobalButtons();
+});
+btnClearAll.addEventListener("click",()=>{
+  if(!confirm("Cancellare tutte le tracce?")) return;
+  for(const t of tracks) clearTrack(t);
+  masterLoopSeconds=null;masterLenEl.textContent="—";updateGlobalButtons();
+});
+sourceSelect.addEventListener("change",()=>{if(isInitialized)showToast("Ricarica la pagina per cambiare sorgente.");});
+setInterval(setDots,600);
+window.addEventListener("resize",()=>{for(const t of tracks)if(t.buffer)drawWaveform(t.ui.canvas,t.buffer);});
+
+buildUI();
+
+/* ═══════════════════════════════════════════════════════
+   STICKY MINI METRO — clona i LED nel bar fisso in cima
+═══════════════════════════════════════════════════════ */
+(function(){
+  const stickyBar   = document.getElementById("stickyMetro");
+  const stickyStrip = document.getElementById("ledStripSticky");
+  const stickyNum   = document.getElementById("beatNumSticky");
+  const metroBarEl  = document.querySelector(".metro-bar");
+
+  // Build a mirror of the LED strip inside the sticky bar
+  const stickyLedEls = [];
+  for(let i=0;i<LEDS;i++){
+    if(i>0&&i%4===0){
+      const sep=document.createElement("div");sep.className="led-sep";
+      stickyStrip.appendChild(sep);
+    }
+    const d=document.createElement("div");
+    const isAccent=(i%beatsPerBar===0);
+    d.className="led"+(isAccent?" beat1":"");
+    if(isAccent){
+      const n=document.createElement("div");n.className="beat-n";
+      n.textContent=(i/4+1);d.appendChild(n);
+    }
+    stickyStrip.appendChild(d);
+    stickyLedEls.push(d);
+  }
+
+  // Sync sticky LEDs whenever main setLed() is called
+  const _origSetLed = setLed;
+  setLed = function(beat, isCountdown=false){
+    _origSetLed(beat, isCountdown);
+    // Mirror state to sticky LEDs
+    stickyLedEls.forEach((l,i)=>{
+      l.classList.remove("lit","countdown");
+      if(i===beat){
+        if(isCountdown) l.classList.add("countdown");
+        else l.classList.add("lit");
+      }
+    });
+    // Mirror beat number
+    if(beat>=0){
+      stickyNum.textContent=(beat+1);
+      stickyNum.classList.add("flash");
+      clearTimeout(stickyNum._ft);
+      stickyNum._ft=setTimeout(()=>stickyNum.classList.remove("flash"),80);
+    } else {
+      stickyNum.textContent="—";stickyNum.classList.remove("flash");
+    }
+  };
+
+  // Show/hide sticky bar based on main metro bar visibility
+  const observer = new IntersectionObserver(
+    ([entry])=>{ stickyBar.classList.toggle("visible", !entry.isIntersecting); },
+    { threshold: 0, rootMargin: "0px" }
+  );
+  observer.observe(metroBarEl);
+})();
+
+</script>
+</body>
+</html>
