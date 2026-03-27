@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Accordatore Pianoforte 88 Tasti</title>
+<meta name="theme-color" content="#0a0a0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0a0f;
+  --surface:#111118;
+  --surface2:#1a1a26;
+  --border:rgba(180,140,80,0.2);
+  --gold:#c9a84c;
+  --gold2:#f0d080;
+  --green:#00e676;
+  --red:#ff4444;
+  --orange:#ff9800;
+  --white-key:#f5f0e8;
+  --white-key-hover:#fff8e7;
+  --black-key:#1a1410;
+  --text:#e8e0d0;
+  --text2:#9090a0;
+  --radius:14px;
+}
+
+html,body{
+  width:100%;height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Space Mono',monospace;
+  overflow:hidden;
+}
+
+/* ── LAYOUT ── */
+.app{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  background:radial-gradient(ellipse at 30% 0%,#1a1430 0%,var(--bg) 60%);
+}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px 8px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.logo{
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:900;
+  color:var(--gold2);
+  letter-spacing:1px;
+}
+.logo span{color:var(--text2);font-size:12px;font-weight:400;display:block;letter-spacing:2px;margin-top:-2px;}
+.header-controls{display:flex;gap:8px;align-items:center;}
+
+/* ── BUTTONS ── */
+.btn{
+  border:none;cursor:pointer;
+  padding:8px 14px;border-radius:10px;
+  font-family:'Space Mono',monospace;
+  font-size:12px;font-weight:700;
+  color:#fff;transition:all .15s ease;
+  user-select:none;letter-spacing:.5px;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#2a5298,#3a70c8);}
+.btn-primary:hover{background:linear-gradient(135deg,#3a6cc0,#4a84d8);}
+.btn-danger{background:linear-gradient(135deg,#8b1a1a,#c22);}
+.btn-danger:hover{background:linear-gradient(135deg,#a02020,#d44);}
+.btn-gold{background:linear-gradient(135deg,#7a5a10,#c9a84c);color:#000;}
+.btn-gold:hover{background:linear-gradient(135deg,#9a7020,#f0c85c);}
+.btn-dark{background:rgba(255,255,255,.08);border:1px solid var(--border);}
+.btn-dark:hover{background:rgba(255,255,255,.13);}
+.btn-active{background:linear-gradient(135deg,#1a6b3a,#22a855) !important;}
+
+/* ── REF A4 ── */
+.ref-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:10px;
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  font-size:11px;font-weight:700;
+  color:var(--gold);
+}
+
+/* ── MAIN AREA ── */
+.main{
+  flex:1;display:flex;flex-direction:column;
+  overflow:hidden;padding:10px 14px 6px;
+  gap:8px;
+}
+
+/* ── MODE BAR ── */
+.mode-bar{
+  display:flex;gap:8px;align-items:center;
+  flex-shrink:0;
+}
+.mode-label{font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;}
+
+/* ── READOUT PANEL ── */
+.readout-panel{
+  display:flex;gap:10px;align-items:stretch;
+  flex-shrink:0;
+}
+.readout-main{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:10px 8px;
+  position:relative;overflow:hidden;
+}
+.readout-main::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.note-display{
+  font-family:'Playfair Display',serif;
+  font-size:52px;font-weight:900;
+  line-height:1;
+  color:var(--gold2);
+  text-shadow:0 0 30px rgba(201,168,76,.35),0 0 60px rgba(201,168,76,.15);
+  transition:color .2s;
+}
+.note-display.tuned{color:var(--green);text-shadow:0 0 30px rgba(0,230,118,.4);}
+.note-display.sharp-color{color:var(--orange);}
+.note-display.flat-color{color:var(--red);}
+.freq-display{font-size:18px;font-weight:700;color:var(--text2);margin-top:2px;}
+.cents-display{font-size:14px;font-weight:700;color:var(--gold);margin-top:1px;}
+
+.readout-side{
+  width:120px;display:flex;flex-direction:column;gap:6px;
+}
+.side-card{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:6px;text-align:center;
+}
+.side-card-label{font-size:9px;letter-spacing:1.5px;color:var(--text2);text-transform:uppercase;margin-bottom:2px;}
+.side-card-val{font-size:16px;font-weight:700;color:var(--text);}
+.side-card-val.ok{color:var(--green);}
+.side-card-val.low{color:var(--red);}
+.side-card-val.high{color:var(--orange);}
+
+/* ── METER ── */
+.meter-wrap{
+  flex-shrink:0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:8px 12px;
+  position:relative;
+}
+.meter-bar{
+  position:relative;height:36px;border-radius:8px;
+  background:rgba(255,255,255,.04);
+  overflow:hidden;
+}
+.meter-center-line{
+  position:absolute;top:0;bottom:0;left:50%;
+  width:2px;transform:translateX(-50%);
+  background:var(--green);
+  box-shadow:0 0 10px rgba(0,230,118,.6);
+  z-index:2;
+}
+.meter-zones{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,
+    rgba(255,68,68,.15) 0%,
+    rgba(255,68,68,.08) 25%,
+    rgba(0,230,118,.12) 40%,
+    rgba(0,230,118,.25) 48%,
+    rgba(0,230,118,.25) 52%,
+    rgba(0,230,118,.12) 60%,
+    rgba(255,136,0,.08) 75%,
+    rgba(255,136,0,.15) 100%
+  );
+}
+.meter-needle{
+  position:absolute;top:4px;bottom:4px;
+  width:5px;border-radius:3px;
+  left:50%;transform:translateX(-50%);
+  background:#ff4444;
+  box-shadow:0 0 14px rgba(255,68,68,.7);
+  transition:left .07s ease-out,background .2s,box-shadow .2s;
+  z-index:3;
+}
+.meter-needle.ok{
+  background:var(--green);
+  box-shadow:0 0 18px rgba(0,230,118,.8);
+}
+.meter-scale{
+  display:flex;justify-content:space-between;
+  padding:2px 0 0;
+}
+.meter-tick{font-size:9px;color:var(--text2);font-weight:700;}
+
+/* ── STATUS ── */
+.status-bar{
+  text-align:center;padding:5px 12px;
+  border-radius:8px;font-size:12px;font-weight:700;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  letter-spacing:.5px;
+  flex-shrink:0;
+  transition:all .2s;
+}
+.status-bar.good{background:rgba(0,230,118,.12);color:#80ffb8;border-color:rgba(0,230,118,.25);}
+.status-bar.low{background:rgba(255,68,68,.12);color:#ffaaaa;border-color:rgba(255,68,68,.25);}
+.status-bar.high{background:rgba(255,136,0,.12);color:#ffcc80;border-color:rgba(255,136,0,.25);}
+
+/* ── KEYBOARD SECTION ── */
+.keyboard-section{
+  flex:1;min-height:0;
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.keyboard-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,.3);
+  flex-shrink:0;
+}
+.keyboard-title{font-size:11px;letter-spacing:1.5px;color:var(--text2);text-transform:uppercase;}
+.keyboard-nav{display:flex;gap:6px;align-items:center;}
+.target-note-display{
+  font-family:'Playfair Display',serif;
+  font-size:14px;font-weight:700;color:var(--gold2);
+  min-width:60px;text-align:center;
+}
+.nav-btn{
+  width:28px;height:28px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;
+}
+
+/* ── PIANO KEYBOARD ── */
+.keyboard-scroll{
+  flex:1;overflow-x:auto;overflow-y:hidden;
+  padding:10px 12px 8px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--gold) rgba(255,255,255,.05);
+  cursor:grab;
+  user-select:none;
+}
+.keyboard-scroll:active{cursor:grabbing;}
+.keyboard-scroll::-webkit-scrollbar{height:5px;}
+.keyboard-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:3px;}
+.keyboard-scroll::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px;}
+
+.piano-keys{
+  position:relative;
+  display:flex;
+  height:100%;
+  min-height:110px;
+}
+
+.white-key{
+  position:relative;
+  width:32px;
+  height:100%;
+  background:var(--white-key);
+  border:1px solid #aaa;
+  border-radius:0 0 5px 5px;
+  cursor:pointer;
+  transition:background .1s,transform .08s;
+  flex-shrink:0;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:4px;
+  z-index:1;
+}
+.white-key:hover{background:var(--white-key-hover);}
+.white-key:active{background:#e8dcc8;transform:scaleY(.98);transform-origin:top;}
+.white-key.selected{
+  background:linear-gradient(180deg,#c9e8ff,#a0d0ff);
+  border-color:#4499dd;
+  box-shadow:0 0 12px rgba(100,180,255,.6);
+}
+.white-key.target{
+  background:linear-gradient(180deg,#ffe8a0,#ffd060);
+  border-color:var(--gold);
+  box-shadow:0 0 14px rgba(201,168,76,.7);
+  animation:pulse-key 1s ease-in-out infinite;
+}
+.white-key.tuned-key{
+  background:linear-gradient(180deg,#c8ffda,#80f0a8);
+  border-color:var(--green);
+  box-shadow:0 0 14px rgba(0,230,118,.7);
+}
+@keyframes pulse-key{
+  0%,100%{box-shadow:0 0 10px rgba(201,168,76,.5);}
+  50%{box-shadow:0 0 22px rgba(201,168,76,.9);}
+}
+
+.key-label{
+  font-size:8px;font-weight:700;
+  color:rgba(0,0,0,.5);
+  pointer-events:none;
+  text-align:center;
+  line-height:1.2;
+}
+.white-key.selected .key-label,.white-key.target .key-label,.white-key.tuned-key .key-label{color:rgba(0,0,0,.7);}
+
+.black-key{
+  position:absolute;
+  width:20px;
+  height:62%;
+  top:0;
+  background:linear-gradient(180deg,#2a2018,var(--black-key));
+  border-radius:0 0 4px 4px;
+  cursor:pointer;
+  transition:background .1s,transform .08s;
+  z-index:2;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:3px;
+  border:1px solid #000;
+  border-top:none;
+}
+.black-key:hover{background:linear-gradient(180deg,#3a3020,#252015);}
+.black-key:active{background:linear-gradient(180deg,#201808,#151005);transform:scaleY(.97);transform-origin:top;}
+.black-key.selected{
+  background:linear-gradient(180deg,#1a4a7a,#1060b0);
+  border-color:#3399ee;
+  box-shadow:0 0 10px rgba(80,160,255,.6);
+}
+.black-key.target{
+  background:linear-gradient(180deg,#7a5a00,#c9901c);
+  border-color:#e0b030;
+  box-shadow:0 0 12px rgba(201,168,76,.8);
+  animation:pulse-key 1s ease-in-out infinite;
+}
+.black-key.tuned-key{
+  background:linear-gradient(180deg,#006a30,#00a848);
+  border-color:var(--green);
+  box-shadow:0 0 12px rgba(0,230,118,.8);
+}
+.black-key .key-label{font-size:7px;color:rgba(255,255,255,.45);}
+.black-key.selected .key-label,.black-key.target .key-label{color:rgba(255,255,255,.8);}
+
+/* ── OCTAVE MARKERS ── */
+.octave-marker{
+  position:absolute;bottom:0;
+  font-size:8px;color:rgba(0,0,0,.35);font-weight:700;
+  pointer-events:none;
+  padding-bottom:2px;
+  z-index:3;
+}
+
+/* ── OVERLAY ── */
+.overlay{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.88);z-index:999;padding:16px;
+}
+.overlay-card{
+  width:min(480px,95vw);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;padding:24px;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+  text-align:center;
+}
+.overlay-card h2{
+  font-family:'Playfair Display',serif;
+  font-size:22px;font-weight:900;color:var(--gold2);
+  margin-bottom:6px;
+}
+.overlay-card p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:18px;}
+.overlay-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.overlay-row .btn{min-width:140px;padding:11px 18px;font-size:13px;}
+.err{display:none;margin-top:14px;color:#ff6b6b;font-size:12px;font-weight:700;white-space:pre-wrap;line-height:1.5;}
+
+/* ── REF MODAL ── */
+.ref-modal{
+  position:fixed;inset:0;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.75);z-index:1200;padding:14px;
+}
+.ref-modal.show{display:flex;}
+.ref-card{
+  width:min(400px,95vw);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:20px;
+  box-shadow:0 18px 70px rgba(0,0,0,.5);
+}
+.ref-card h3{
+  font-family:'Playfair Display',serif;
+  font-size:17px;font-weight:700;color:var(--gold2);margin-bottom:12px;
+}
+.ref-row{display:flex;gap:10px;align-items:center;}
+.ref-row input{
+  flex:1;padding:10px 12px;
+  border-radius:10px;
+  border:2px solid var(--border);
+  background:rgba(255,255,255,.05);
+  color:var(--text);
+  font-family:'Space Mono',monospace;
+  font-size:15px;font-weight:700;outline:none;
+  transition:border-color .15s;
+}
+.ref-row input:focus{border-color:var(--gold);}
+.hint{margin-top:10px;font-size:12px;color:var(--text2);}
+
+/* ── TUNING INDICATOR BAR ── */
+.tuning-indicator{
+  position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--red),var(--orange),var(--green),var(--orange),var(--red));
+  border-radius:0 0 var(--radius) var(--radius);
+  opacity:.4;
+}
+.tuning-cursor{
+  position:absolute;bottom:0;width:3px;height:3px;
+  background:#fff;border-radius:50%;
+  transition:left .07s ease-out;
+  transform:translateX(-50%);
+}
+
+/* Mobile adjustments */
+@media(max-width:480px){
+  .readout-side{display:none;}
+  .note-display{font-size:40px;}
+  .white-key{width:26px;}
+  .black-key{width:17px;}
+  .header .logo span{display:none;}
+}
+@media(max-height:600px){
+  .keyboard-section{flex:none;height:140px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      Piano Tuner
+      <span>ACCORDATORE 88 TASTI</span>
+    </div>
+    <div class="header-controls">
+      <div class="ref-pill">A4 <span id="refVal">440.0 Hz</span></div>
+      <button class="btn btn-dark" id="refBtn">⚙ LA</button>
+      <button class="btn btn-danger" id="stopBtn" style="display:none;">■ STOP</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- MODE BAR -->
+    <div class="mode-bar">
+      <span class="mode-label">Modalità:</span>
+      <button class="btn btn-dark btn-active" id="modeAutoBtn" onclick="setMode('auto')">🎤 AUTO</button>
+      <button class="btn btn-dark" id="modeManualBtn" onclick="setMode('manual')">🎹 MANUALE</button>
+      <button class="btn btn-gold" id="playTargetBtn" style="display:none;" title="Riproduci la nota target">▶ Ascolta</button>
+    </div>
+
+    <!-- READOUT -->
+    <div class="readout-panel">
+      <div class="readout-main" id="readoutMain">
+        <div class="note-display" id="noteName">—</div>
+        <div class="freq-display" id="freqNow">— Hz</div>
+        <div class="cents-display" id="deltaNow">0 cents</div>
+        <div class="tuning-indicator"></div>
+      </div>
+      <div class="readout-side">
+        <div class="side-card">
+          <div class="side-card-label">Target</div>
+          <div class="side-card-val" id="targetFreqCard">—</div>
+        </div>
+        <div class="side-card">
+          <div class="side-card-label">MIDI</div>
+          <div class="side-card-val" id="midiCard">—</div>
+        </div>
+        <div class="side-card">
+          <div class="side-card-label">Tasto</div>
+          <div class="side-card-val" id="keyNumCard">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METER -->
+    <div class="meter-wrap">
+      <div class="meter-bar">
+        <div class="meter-zones"></div>
+        <div class="meter-center-line"></div>
+        <div class="meter-needle" id="needle"></div>
+      </div>
+      <div class="meter-scale">
+        <span class="meter-tick">-50</span>
+        <span class="meter-tick">-25</span>
+        <span class="meter-tick" style="color:var(--green)">0</span>
+        <span class="meter-tick">+25</span>
+        <span class="meter-tick">+50</span>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-bar" id="status">Tocca AVVIA per iniziare</div>
+
+    <!-- KEYBOARD SECTION -->
+    <div class="keyboard-section">
+      <div class="keyboard-header">
+        <div class="keyboard-title">🎹 Tastiera — 88 tasti (A0 → C8)</div>
+        <div class="keyboard-nav">
+          <button class="btn btn-dark nav-btn" id="prevNoteBtn" title="Nota precedente">◀</button>
+          <div class="target-note-display" id="targetNoteDisp">—</div>
+          <button class="btn btn-dark nav-btn" id="nextNoteBtn" title="Nota successiva">▶</button>
+        </div>
+      </div>
+      <div class="keyboard-scroll" id="keyboardScroll">
+        <div class="piano-keys" id="pianoKeys"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- START OVERLAY -->
+<div class="overlay" id="startOverlay">
+  <div class="overlay-card">
+    <h2>🎹 Accordatore Pianoforte</h2>
+    <p>
+      Accordatore professionale per pianoforte a 88 tasti.<br/>
+      Suona una nota e il rilevamento avviene automaticamente,<br/>
+      oppure seleziona manualmente il tasto da accordare.<br/><br/>
+      <strong style="color:var(--gold)">LA di riferimento: <span id="overlayRef">440.0 Hz</span></strong>
+    </p>
+    <div class="overlay-row">
+      <button class="btn btn-dark" id="overlayRefBtn">⚙ Cambia LA</button>
+      <button class="btn btn-primary" id="startBtn">🎤 AVVIA</button>
+    </div>
+    <div class="err" id="overlayErr"></div>
+  </div>
+</div>
+
+<!-- REF MODAL -->
+<div class="ref-modal" id="refModal">
+  <div class="ref-card">
+    <h3>Imposta LA (A4) di riferimento</h3>
+    <div class="ref-row">
+      <input id="refInput" type="number" min="380" max="520" step="0.1" value="440.0"/>
+      <button class="btn btn-gold" id="refApply">Applica</button>
+    </div>
+    <div class="hint">Suggeriti: 440 Hz (standard), 442 Hz (orchestrale), 432 Hz (alternativo)</div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-dark" style="flex:1" onclick="setReference(432);document.getElementById('refModal').classList.remove('show')">432 Hz</button>
+      <button class="btn btn-dark" style="flex:1" onclick="setReference(440);document.getElementById('refModal').classList.remove('show')">440 Hz</button>
+      <button class="btn btn-dark" style="flex:1" onclick="setReference(442);document.getElementById('refModal').classList.remove('show')">442 Hz</button>
+      <button class="btn btn-dark" style="flex:1" id="refClose">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ─── PIANO: 88 TASTI (MIDI 21 = A0 → MIDI 108 = C8) ──────────────────────────
+// Numero tasto pianoforte = MIDI - 20  (tasto 1 = A0, tasto 88 = C8)
+const PIANO_MIDI_MIN = 21; // A0
+const PIANO_MIDI_MAX = 108; // C8
+
+const NOTE_NAMES_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const NOTE_NAMES_FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+// Pattern tasto bianco/nero nell'ottava (C=0..B=11)
+const IS_BLACK = [false,true,false,true,false,false,true,false,true,false,true,false];
+
+// ─── STATO ────────────────────────────────────────────────────────────────────
+let referenceA4 = 440.0;
+let currentMode = 'auto'; // 'auto' | 'manual'
+let targetMidi = null;    // nota selezionata in modalità manuale
+let audioContext, analyser, analyserFreq, micSource, streamRef, rafId;
+let isRunning = false;
+let smoothFreq = null, lastStableMidi = null, stableFrames = 0;
+let audioCtxSynth = null;  // contesto separato per sintesi
+
+// ─── DOM ──────────────────────────────────────────────────────────────────────
+const refValEl      = document.getElementById('refVal');
+const overlayRefEl  = document.getElementById('overlayRef');
+const noteNameEl    = document.getElementById('noteName');
+const freqNowEl     = document.getElementById('freqNow');
+const deltaNowEl    = document.getElementById('deltaNow');
+const statusEl      = document.getElementById('status');
+const needleEl      = document.getElementById('needle');
+const stopBtn       = document.getElementById('stopBtn');
+const startOverlay  = document.getElementById('startOverlay');
+const startBtn      = document.getElementById('startBtn');
+const overlayRefBtn = document.getElementById('overlayRefBtn');
+const overlayErr    = document.getElementById('overlayErr');
+const refBtn        = document.getElementById('refBtn');
+const refModal      = document.getElementById('refModal');
+const refInput      = document.getElementById('refInput');
+const refApply      = document.getElementById('refApply');
+const refClose      = document.getElementById('refClose');
+const pianoKeys     = document.getElementById('pianoKeys');
+const keyboardScroll= document.getElementById('keyboardScroll');
+const targetNoteDisp= document.getElementById('targetNoteDisp');
+const targetFreqCard= document.getElementById('targetFreqCard');
+const midiCard      = document.getElementById('midiCard');
+const keyNumCard    = document.getElementById('keyNumCard');
+const prevNoteBtn   = document.getElementById('prevNoteBtn');
+const nextNoteBtn   = document.getElementById('nextNoteBtn');
+const playTargetBtn = document.getElementById('playTargetBtn');
+const modeAutoBtn   = document.getElementById('modeAutoBtn');
+const modeManualBtn = document.getElementById('modeManualBtn');
+
+// ─── UTILITY ──────────────────────────────────────────────────────────────────
+const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
+function midiToFreq(m){ return referenceA4 * Math.pow(2,(m-69)/12); }
+function freqToMidi(f){ return 69 + 12*Math.log2(f/referenceA4); }
+function centsDiff(freq,target){ return 1200*Math.log2(freq/target); }
+
+function midiToName(midi, preferFlat=false){
+  const n = Math.round(midi);
+  const octave = Math.floor(n/12)-1;
+  const idx = ((n%12)+12)%12;
+  const name = preferFlat ? NOTE_NAMES_FLAT[idx] : NOTE_NAMES_SHARP[idx];
+  return {name, octave, idx, midi:n};
+}
+function midiToLabel(midi){
+  const s = midiToName(midi,false), f = midiToName(midi,true);
+  if(s.name !== f.name) return `${s.name}${s.octave}`;
+  return `${s.name}${s.octave}`;
+}
+function midiToBothLabel(midi){
+  const s = midiToName(midi,false), f = midiToName(midi,true);
+  if(s.name !== f.name) return `${s.name}${s.octave}\n${f.name}${f.octave}`;
+  return `${s.name}${s.octave}`;
+}
+function midiToKeyNum(midi){ return midi - PIANO_MIDI_MIN + 1; }
+
+// ─── COSTRUZIONE TASTIERA ────────────────────────────────────────────────────
+const keyElements = {}; // midi → element
+
+function buildKeyboard(){
+  pianoKeys.innerHTML = '';
+
+  // Calcola posizioni tasti bianchi
+  // Ogni ottava ha 7 tasti bianchi: C D E F G A B
+  const whiteKeyMap = [0,2,4,5,7,9,11]; // indici nell'ottava dei tasti bianchi
+  // blackKeyOffsets relativi al tasto bianco precedente (in px, width=32px, black=20px)
+  // Dopo C: C# offset +22, dopo D: D# offset+22, dopo F: F# +22, dopo G: G#+22, dopo A: A#+22
+  const blackAfterWhite = {0:true, 2:true, 5:true, 7:true, 9:true}; // idx ottava con # a destra
+
+  let whiteCount = 0;
+  const whitePositions = {}; // midi → posX del centro tasto bianco
+
+  // Prima passata: piazza tutti i tasti bianchi
+  for(let midi = PIANO_MIDI_MIN; midi <= PIANO_MIDI_MAX; midi++){
+    const idx = ((midi%12)+12)%12;
+    if(!IS_BLACK[idx]){
+      whitePositions[midi] = whiteCount;
+      whiteCount++;
+    }
+  }
+
+  // Larghezza totale
+  const WW = 32; // white key width px
+  const BW = 20; // black key width px
+  const TOTAL_W = whiteCount * WW;
+  pianoKeys.style.width = TOTAL_W + 'px';
+  pianoKeys.style.height = '100%';
+  pianoKeys.style.minHeight = '110px';
+
+  // Seconda passata: crea i tasti
+  for(let midi = PIANO_MIDI_MIN; midi <= PIANO_MIDI_MAX; midi++){
+    const idx = ((midi%12)+12)%12;
+    const isBlack = IS_BLACK[idx];
+    const info = midiToName(midi, false);
+    const infoF = midiToName(midi, true);
+    const keyNum = midiToKeyNum(midi);
+
+    if(!isBlack){
+      const wPos = whitePositions[midi];
+      const el = document.createElement('div');
+      el.className = 'white-key';
+      el.style.position = 'absolute';
+      el.style.left = (wPos * WW) + 'px';
+      el.style.width = WW + 'px';
+      el.style.top = '0';
+      el.style.bottom = '0';
+      el.style.height = '100%';
+
+      // Etichetta
+      const lbl = document.createElement('div');
+      lbl.className = 'key-label';
+      // Mostra nome nota per C e ogni 12° tasto
+      if(idx === 0 || midi === PIANO_MIDI_MIN || midi === PIANO_MIDI_MAX){
+        lbl.textContent = info.name + info.octave;
+      } else if(idx === 9){ // A
+        lbl.textContent = 'A' + info.octave;
+      }
+      el.appendChild(lbl);
+
+      el.dataset.midi = midi;
+      el.addEventListener('pointerdown', e=>{ e.preventDefault(); selectKey(midi); });
+      pianoKeys.appendChild(el);
+      keyElements[midi] = el;
+
+      // Aggiungi marker ottava su C
+      if(idx === 0){
+        const marker = document.createElement('div');
+        marker.className = 'octave-marker';
+        marker.style.left = (wPos*WW + 2) + 'px';
+        marker.textContent = 'C' + info.octave;
+        pianoKeys.appendChild(marker);
+      }
+    } else {
+      // Tasto nero: posizionato tra i tasti bianchi
+      // Trova il tasto bianco a sinistra
+      const leftWhiteMidi = midi - 1;
+      const rightWhiteMidi = midi + 1;
+      let wPos = whitePositions[leftWhiteMidi];
+      if(wPos === undefined){
+        // per sicurezza
+        wPos = whitePositions[rightWhiteMidi] - 1;
+      }
+
+      const el = document.createElement('div');
+      el.className = 'black-key';
+      // Posiziona a destra del tasto bianco sinistro
+      const leftPx = (wPos * WW) + WW - Math.floor(BW/2);
+      el.style.left = leftPx + 'px';
+      el.style.width = BW + 'px';
+
+      // Etichetta (#/b)
+      const lbl = document.createElement('div');
+      lbl.className = 'key-label';
+      const bothName = info.name !== infoF.name ? info.name+'/' + infoF.name : info.name;
+      lbl.textContent = bothName.replace('C#','C#').replace('D#','D#');
+      el.appendChild(lbl);
+
+      el.dataset.midi = midi;
+      el.addEventListener('pointerdown', e=>{ e.preventDefault(); selectKey(midi); });
+      pianoKeys.appendChild(el);
+      keyElements[midi] = el;
+    }
+  }
+}
+
+// ─── SELEZIONE TASTO ─────────────────────────────────────────────────────────
+function selectKey(midi){
+  if(currentMode !== 'manual') return;
+  targetMidi = midi;
+  updateTargetDisplay();
+  updateKeyHighlights(null);
+  scrollToKey(midi);
+}
+
+function updateTargetDisplay(){
+  if(targetMidi === null){
+    targetNoteDisp.textContent = '—';
+    targetFreqCard.textContent = '—';
+    midiCard.textContent = '—';
+    keyNumCard.textContent = '—';
+    return;
+  }
+  const info = midiToName(targetMidi);
+  const infoF = midiToName(targetMidi, true);
+  const noteLabel = info.name !== infoF.name ? `${info.name}${info.octave}/${infoF.name}${infoF.octave}` : `${info.name}${info.octave}`;
+  targetNoteDisp.textContent = noteLabel;
+  const freq = midiToFreq(targetMidi);
+  targetFreqCard.textContent = freq.toFixed(2) + ' Hz';
+  midiCard.textContent = targetMidi;
+  keyNumCard.textContent = '#' + midiToKeyNum(targetMidi);
+}
+
+function scrollToKey(midi){
+  const el = keyElements[midi];
+  if(!el) return;
+  const container = keyboardScroll;
+  const keyLeft = el.offsetLeft;
+  const keyWidth = el.offsetWidth;
+  const containerWidth = container.clientWidth;
+  const scrollTarget = keyLeft - (containerWidth/2) + (keyWidth/2);
+  container.scrollTo({left: Math.max(0,scrollTarget), behavior:'smooth'});
+}
+
+// ─── HIGHLIGHT TASTI ─────────────────────────────────────────────────────────
+let lastHighlightedMidi = null;
+let lastTunedMidi = null;
+
+function clearKeyHighlights(){
+  Object.values(keyElements).forEach(el=>{
+    el.classList.remove('selected','target','tuned-key');
+  });
+}
+
+function updateKeyHighlights(detectedMidi, tuned=false){
+  // Rimuovi vecchi
+  if(lastHighlightedMidi !== null && keyElements[lastHighlightedMidi]){
+    keyElements[lastHighlightedMidi].classList.remove('selected','tuned-key');
+  }
+  if(lastTunedMidi !== null && keyElements[lastTunedMidi]){
+    keyElements[lastTunedMidi].classList.remove('tuned-key','selected');
+  }
+
+  // Target in modalità manuale
+  Object.values(keyElements).forEach(el=>el.classList.remove('target'));
+  if(currentMode === 'manual' && targetMidi !== null && keyElements[targetMidi]){
+    if(!tuned) keyElements[targetMidi].classList.add('target');
+  }
+
+  if(detectedMidi !== null && keyElements[detectedMidi]){
+    if(tuned){
+      keyElements[detectedMidi].classList.add('tuned-key');
+      lastTunedMidi = detectedMidi;
+    } else {
+      keyElements[detectedMidi].classList.add('selected');
+      lastTunedMidi = null;
+    }
+    lastHighlightedMidi = detectedMidi;
+  }
+}
+
+// ─── MODALITÀ ────────────────────────────────────────────────────────────────
+function setMode(mode){
+  currentMode = mode;
+  modeAutoBtn.classList.toggle('btn-active', mode==='auto');
+  modeManualBtn.classList.toggle('btn-active', mode==='manual');
+  playTargetBtn.style.display = mode==='manual' ? 'inline-flex' : 'none';
+
+  if(mode === 'auto'){
+    targetMidi = null;
+    updateTargetDisplay();
+    clearKeyHighlights();
+    setStatus('', 'Modalità AUTO — Suona una nota');
+  } else {
+    if(targetMidi === null) targetMidi = 69; // default A4
+    updateTargetDisplay();
+    updateKeyHighlights(null);
+    scrollToKey(targetMidi);
+    setStatus('', 'Seleziona il tasto da accordare');
+  }
+}
+
+// ─── NAVIGAZIONE NOTA ────────────────────────────────────────────────────────
+function navigate(delta){
+  if(currentMode !== 'manual') return;
+  const cur = targetMidi !== null ? targetMidi : 69;
+  const next = clamp(cur + delta, PIANO_MIDI_MIN, PIANO_MIDI_MAX);
+  selectKey(next);
+}
+
+prevNoteBtn.addEventListener('click', ()=>navigate(-1));
+nextNoteBtn.addEventListener('click', ()=>navigate(1));
+
+// ─── RIPRODUZIONE NOTA ───────────────────────────────────────────────────────
+async function playTargetNote(){
+  if(targetMidi === null) return;
+  try{
+    if(!audioCtxSynth) audioCtxSynth = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtxSynth.state==='suspended') await audioCtxSynth.resume();
+    const freq = midiToFreq(targetMidi);
+    const osc = audioCtxSynth.createOscillator();
+    const gain = audioCtxSynth.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, audioCtxSynth.currentTime);
+    gain.gain.linearRampToValueAtTime(0.4, audioCtxSynth.currentTime+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtxSynth.currentTime+2.0);
+    osc.connect(gain);
+    gain.connect(audioCtxSynth.destination);
+    osc.start();
+    osc.stop(audioCtxSynth.currentTime+2.1);
+  }catch(e){ console.error(e); }
+}
+
+playTargetBtn.addEventListener('click', playTargetNote);
+
+// ─── DRAG SCROLL KEYBOARD ────────────────────────────────────────────────────
+(function(){
+  let isDown=false, startX, scrollLeft;
+  keyboardScroll.addEventListener('mousedown', e=>{
+    isDown=true;
+    keyboardScroll.style.cursor='grabbing';
+    startX=e.pageX - keyboardScroll.offsetLeft;
+    scrollLeft=keyboardScroll.scrollLeft;
+  });
+  keyboardScroll.addEventListener('mouseleave', ()=>{ isDown=false; keyboardScroll.style.cursor='grab'; });
+  keyboardScroll.addEventListener('mouseup', ()=>{ isDown=false; keyboardScroll.style.cursor='grab'; });
+  keyboardScroll.addEventListener('mousemove', e=>{
+    if(!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - keyboardScroll.offsetLeft;
+    const walk = (x - startX)*1.5;
+    keyboardScroll.scrollLeft = scrollLeft - walk;
+  });
+})();
+
+// ─── ALGORITMO PITCH DETECTION (YIN) ─────────────────────────────────────────
+const FFT_SIZE = 4096;
+const FFT_FREQ_SIZE = 8192;
+const RMS_MIN = 0.012;
+const CONF_MIN = 0.80;
+const NOTE_HYSTERESIS_CENTS = 22;
+const STABLE_FRAMES_REQUIRED = 3;
+// Pianoforte: A0 (27.5Hz) → C8 (4186Hz)
+const FREQ_MIN = 25;
+const FREQ_MAX = 4500;
+
+function calcRMS(buf){
+  let s=0;
+  for(let i=0;i<buf.length;i++) s+=buf[i]*buf[i];
+  return Math.sqrt(s/buf.length);
+}
+function yinDifference(buf, W){
+  const d = new Float32Array(W); d[0]=0;
+  for(let tau=1;tau<W;tau++){
+    let s=0;
+    for(let i=0;i<W;i++){ const diff=buf[i]-buf[i+tau]; s+=diff*diff; }
+    d[tau]=s;
+  }
+  return d;
+}
+function yinCMND(d){
+  const cmnd = new Float32Array(d.length); cmnd[0]=1;
+  let run=0;
+  for(let tau=1;tau<d.length;tau++){
+    run+=d[tau];
+    cmnd[tau]=(run===0)?0:d[tau]*tau/run;
+  }
+  return cmnd;
+}
+function parabolicInterp(arr, x){
+  if(x<=0||x>=arr.length-1) return x;
+  const a=arr[x-1],b=arr[x],c=arr[x+1];
+  const denom=2*(a-2*b+c);
+  if(Math.abs(denom)<1e-10) return x;
+  return x+(a-c)/denom;
+}
+function detectPitchYIN(buf, sr){
+  const rms=calcRMS(buf);
+  if(rms<RMS_MIN) return {freq:-1,confidence:0,rms};
+  const W=Math.floor(buf.length/2);
+  const d=yinDifference(buf,W);
+  const cmnd=yinCMND(d);
+  const tauMin=Math.max(1, Math.floor(sr/FREQ_MAX));
+  const tauMax=Math.min(W-1, Math.ceil(sr/FREQ_MIN));
+  const threshold=0.10;
+  let bestTau=-1, bestVal=1;
+  for(let tau=tauMin;tau<=tauMax;tau++){
+    if(cmnd[tau]<threshold){
+      while(tau+1<=tauMax&&cmnd[tau+1]<cmnd[tau]) tau++;
+      bestTau=tau; bestVal=cmnd[tau]; break;
+    }
+  }
+  if(bestTau===-1){
+    for(let tau=tauMin;tau<=tauMax;tau++){
+      if(cmnd[tau]<bestVal){ bestVal=cmnd[tau]; bestTau=tau; }
+    }
+  }
+  if(bestTau===-1||bestVal>0.35) return {freq:-1,confidence:0,rms};
+  const tauInterp=parabolicInterp(cmnd,bestTau);
+  const freq=sr/tauInterp;
+  if(freq<FREQ_MIN||freq>FREQ_MAX) return {freq:-1,confidence:0,rms};
+  const confidence=clamp(1-bestVal,0,1)*clamp(rms/0.05,0.1,1);
+  return {freq,confidence,rms};
+}
+function correctOctaveHPS(detectedFreq, fftBuf, sr){
+  if(!fftBuf||fftBuf.length===0) return detectedFreq;
+  const getAmp=(f)=>{
+    const bin=f*fftBuf.length/sr;
+    const i=Math.floor(bin);
+    if(i<0||i>=fftBuf.length-1) return 0;
+    const frac=bin-i;
+    const a=Math.pow(10,fftBuf[i]/20);
+    const b=Math.pow(10,fftBuf[i+1]/20);
+    return a*(1-frac)+b*frac;
+  };
+  const f1=detectedFreq, f2=detectedFreq*2;
+  if(f2>FREQ_MAX) return f1;
+  const amp1=getAmp(f1), amp2=getAmp(f2);
+  if(amp2>amp1*1.6 && f2>=FREQ_MIN&&f2<=FREQ_MAX) return f2;
+  return f1;
+}
+
+function adaptiveAlpha(freq){
+  if(freq>2000) return 0.55;
+  if(freq>500)  return 0.40;
+  if(freq>250)  return 0.30;
+  return 0.20;
+}
+
+const BUF = new Float32Array(FFT_SIZE);
+const FREQ_BUF = new Float32Array(FFT_FREQ_SIZE/2);
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+function setStatus(type, text){
+  statusEl.className = 'status-bar' + (type?' '+type:'');
+  statusEl.textContent = text;
+}
+
+function updateUI(freq){
+  const midi = freqToMidi(freq);
+  const midiR = Math.round(midi);
+  // In modalità manuale, usa il target come riferimento
+  const refMidi = (currentMode==='manual' && targetMidi!==null) ? targetMidi : midiR;
+  const target = midiToFreq(refMidi);
+  const cents = centsDiff(freq, target);
+  const absC = Math.abs(cents);
+
+  // Needle: range ±50 cents
+  const pct = clamp(cents,-50,50)/50 * 46;
+  needleEl.style.left = `calc(50% + ${pct}%)`;
+  const isOk = (currentMode==='auto') ? absC<=3 : (Math.abs(midiR-refMidi)<=0 && absC<=3);
+  needleEl.classList.toggle('ok', isOk);
+
+  // Note display
+  const label = midiToBothLabel(midiR);
+  noteNameEl.textContent = label;
+  noteNameEl.className = 'note-display' + (isOk?' tuned':(cents<0?' flat-color':' sharp-color'));
+  freqNowEl.textContent = freq.toFixed(2)+' Hz';
+  deltaNowEl.textContent = (cents>=0?'+':'')+Math.round(cents)+' cents';
+
+  // In modalità auto: aggiorna info laterali
+  if(currentMode==='auto'){
+    targetFreqCard.textContent = midiToFreq(midiR).toFixed(2)+' Hz';
+    midiCard.textContent = midiR;
+    keyNumCard.textContent = '#'+midiToKeyNum(midiR);
+  }
+
+  // Highlight tastiera
+  if(midiR >= PIANO_MIDI_MIN && midiR <= PIANO_MIDI_MAX){
+    updateKeyHighlights(midiR, isOk);
+    if(currentMode==='auto') scrollToKey(midiR);
+  }
+
+  // Status
+  if(isOk) setStatus('good','✓ Perfetto (±3 cents)');
+  else if(absC<=10) setStatus(cents<0?'low':'high', cents<0?'↓ Alza leggermente':'↑ Abbassa leggermente');
+  else setStatus(cents<0?'low':'high', cents<0?'↓ Troppo bassa — alza il tasto':'↑ Troppo alta — abbassa il tasto');
+}
+
+// ─── TICK LOOP ────────────────────────────────────────────────────────────────
+function tick(){
+  if(!isRunning) return;
+  analyser.getFloatTimeDomainData(BUF);
+  const tmp = new Float32Array(BUF);
+  let {freq, confidence, rms} = detectPitchYIN(tmp, audioContext.sampleRate);
+  const valid = (freq>FREQ_MIN && freq<FREQ_MAX && confidence>=CONF_MIN);
+  if(!valid){
+    stableFrames=0;
+    setStatus('','Ascolto… (suona una nota)');
+    rafId=requestAnimationFrame(tick);
+    return;
+  }
+  if(analyserFreq){
+    analyserFreq.getFloatFrequencyData(FREQ_BUF);
+    freq=correctOctaveHPS(freq,FREQ_BUF,audioContext.sampleRate);
+  }
+  const alpha=adaptiveAlpha(freq);
+  smoothFreq=(smoothFreq==null)?freq:(smoothFreq*(1-alpha)+freq*alpha);
+  const midiNow=freqToMidi(smoothFreq);
+  const midiR=Math.round(midiNow);
+  if(lastStableMidi==null){ lastStableMidi=midiR; stableFrames=1; }
+  else{
+    const centsFrom=centsDiff(smoothFreq,midiToFreq(lastStableMidi));
+    if(Math.abs(centsFrom)<=NOTE_HYSTERESIS_CENTS){ stableFrames++; }
+    else{
+      stableFrames=Math.max(0,stableFrames-1);
+      if(stableFrames<=0){ lastStableMidi=midiR; stableFrames=1; }
+    }
+  }
+  if(stableFrames>=STABLE_FRAMES_REQUIRED) updateUI(smoothFreq);
+  else setStatus('','Stabilizzo…');
+  rafId=requestAnimationFrame(tick);
+}
+
+// ─── START / STOP ─────────────────────────────────────────────────────────────
+function showErr(msg){ overlayErr.style.display='block'; overlayErr.textContent=msg; }
+function hideErr(){ overlayErr.style.display='none'; overlayErr.textContent=''; }
+
+async function start(){
+  hideErr();
+  if(!window.isSecureContext){
+    showErr('ERRORE: il microfono richiede HTTPS.\nApri la pagina su https:// (non file://).');
+    return;
+  }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    showErr('ERRORE: getUserMedia non supportato dal browser.');
+    return;
+  }
+  startBtn.disabled=true; startBtn.textContent='AVVIO…';
+  try{
+    streamRef=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+    });
+    audioContext=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioContext.state==='suspended') await audioContext.resume();
+
+    analyser=audioContext.createAnalyser();
+    analyser.fftSize=FFT_SIZE;
+    analyser.smoothingTimeConstant=0;
+
+    analyserFreq=audioContext.createAnalyser();
+    analyserFreq.fftSize=FFT_FREQ_SIZE;
+    analyserFreq.smoothingTimeConstant=0.5;
+
+    // Per pianoforte: filtro più ampio (27Hz - 4200Hz)
+    const hipass=audioContext.createBiquadFilter();
+    hipass.type='highpass'; hipass.frequency.value=22; hipass.Q.value=0.5;
+    const lopass=audioContext.createBiquadFilter();
+    lopass.type='lowpass'; lopass.frequency.value=4400; lopass.Q.value=0.5;
+
+    micSource=audioContext.createMediaStreamSource(streamRef);
+    micSource.connect(hipass);
+    hipass.connect(lopass);
+    lopass.connect(analyser);
+    lopass.connect(analyserFreq);
+
+    isRunning=true;
+    smoothFreq=null; lastStableMidi=null; stableFrames=0;
+    setStatus('','Ascolto… (suona una nota)');
+    stopBtn.style.display='inline-flex';
+    startOverlay.style.display='none';
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId=requestAnimationFrame(tick);
+
+    // Scroll alla nota target o al centro (A4)
+    const centerMidi = (currentMode==='manual'&&targetMidi!==null) ? targetMidi : 69;
+    setTimeout(()=>scrollToKey(centerMidi), 300);
+
+  }catch(err){
+    console.error(err);
+    const name=err&&err.name?err.name:'';
+    let msg='Permesso microfono negato o non disponibile.\n';
+    if(name==='NotAllowedError'||name==='SecurityError') msg+='Consenti il microfono e ricarica.';
+    else if(name==='NotFoundError') msg+='Nessun microfono rilevato.';
+    else if(name==='NotReadableError') msg+='Microfono occupato da un\'altra app.';
+    else msg+='Riprova o usa Chrome/Edge/Safari.';
+    showErr(msg);
+    startOverlay.style.display='flex';
+  }finally{
+    startBtn.disabled=false; startBtn.textContent='🎤 AVVIA';
+  }
+}
+
+function stop(){
+  isRunning=false;
+  if(rafId) cancelAnimationFrame(rafId); rafId=null;
+  try{if(micSource) micSource.disconnect();}catch(e){}
+  try{if(audioContext) audioContext.close();}catch(e){}
+  if(streamRef){ try{streamRef.getTracks().forEach(t=>t.stop());}catch(e){} }
+  micSource=null; analyser=null; analyserFreq=null; audioContext=null; streamRef=null;
+  smoothFreq=null; lastStableMidi=null; stableFrames=0;
+  stopBtn.style.display='none';
+  setStatus('','Fermato — Premi AVVIA per ricominciare');
+  noteNameEl.textContent='—'; noteNameEl.className='note-display';
+  freqNowEl.textContent='— Hz';
+  deltaNowEl.textContent='0 cents';
+  needleEl.style.left='50%'; needleEl.classList.remove('ok');
+  clearKeyHighlights();
+  startOverlay.style.display='flex';
+}
+
+// ─── RIFERIMENTO A4 ──────────────────────────────────────────────────────────
+function setReference(val){
+  referenceA4=clamp(Number(val||440),380,520);
+  refValEl.textContent=`${referenceA4.toFixed(1)} Hz`;
+  overlayRefEl.textContent=`${referenceA4.toFixed(1)} Hz`;
+  refInput.value=referenceA4.toFixed(1);
+  updateTargetDisplay();
+}
+setReference(440);
+
+function openRefModal(){ refModal.classList.add('show'); }
+function closeRefModal(){ refModal.classList.remove('show'); }
+
+// ─── EVENTI ──────────────────────────────────────────────────────────────────
+startBtn.addEventListener('click', start);
+stopBtn.addEventListener('click', stop);
+overlayRefBtn.addEventListener('click', openRefModal);
+refBtn.addEventListener('click', openRefModal);
+refApply.addEventListener('click', ()=>{ setReference(refInput.value); closeRefModal(); });
+refClose.addEventListener('click', closeRefModal);
+refModal.addEventListener('click', e=>{ if(e.target===refModal) closeRefModal(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&isRunning) stop(); });
+
+// ─── KEYBOARD SHORTCUT ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e=>{
+  if(currentMode==='manual'){
+    if(e.key==='ArrowLeft') navigate(-1);
+    if(e.key==='ArrowRight') navigate(1);
+    if(e.key==='ArrowDown') navigate(-12);
+    if(e.key==='ArrowUp') navigate(12);
+    if(e.key===' ') { e.preventDefault(); playTargetNote(); }
+  }
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+buildKeyboard();
+setMode('auto');
+
+// Scroll iniziale al centro (A4 = tasto 49)
+setTimeout(()=>scrollToKey(69), 100);
+
+startOverlay.style.display='flex';
+</script>
+</body>
+</html>
